@@ -33,3 +33,17 @@ class RandomChallenge(View):
         challenge = Challenge.objects.order_by('?')[0]
         serialized_challenge = serialize('json', [challenge])
         return HttpResponse(serialized_challenge, content_type='application/json')
+
+
+class GetChallenge(View):
+    def get(self, request, slug):
+        challenge = Challenge.objects.filter(slug=slug)
+        serialized_challenge = serialize('json', challenge)
+        return HttpResponse(serialized_challenge, content_type='application/json')
+
+
+class GetChallenges(View):
+    def get(self, request, lower_limit, upper_limit):
+        challenge = Challenge.objects.all()[lower_limit : upper_limit]
+        serialized_challenge = serialize('json', challenge)
+        return HttpResponse(serialized_challenge, content_type='application/json')
