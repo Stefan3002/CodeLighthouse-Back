@@ -4,11 +4,21 @@ from django.http import JsonResponse, HttpResponse
 from django.middleware.csrf import get_token
 from django.shortcuts import render
 from django.views import View
+from django.views.decorators.csrf import requires_csrf_token
 
-from code_lighthouse_backend.models import Challenge
+from code_lighthouse_backend.models import Challenge, AppUser
 
 
 # Create your views here.
+
+class Auth(View):
+    def get(self, request):
+        token = get_token(request)
+        data = {"aaa": "v"}
+        response = HttpResponse(data, content_type='application/json')
+        response.set_cookie('csrftoken', get_token(request))
+        return response
+
 
 class RunUserCode(View):
     def get(self, request):
@@ -23,14 +33,11 @@ class RunUserCode(View):
         return JsonResponse({}, status=200)
 
 
-class Auth(View):
-    def post(self, request):
-        print(request.POST)
-
 
 class RandomChallenge(View):
     def get(self, request):
         challenge = Challenge.objects.order_by('?')[0]
+        print('asdasd', challenge)
         serialized_challenge = serialize('json', [challenge])
         return HttpResponse(serialized_challenge, content_type='application/json')
 
@@ -44,6 +51,12 @@ class GetChallenge(View):
 
 class GetChallenges(View):
     def get(self, request, lower_limit, upper_limit):
-        challenge = Challenge.objects.all()[lower_limit : upper_limit]
-        serialized_challenge = serialize('json', challenge)
+        challenges = Challenge.objects.all()[lower_limit : upper_limit]
+        serialized_challenge = serialize('json', challenges, use_natural_foreign_keys=True)
         return HttpResponse(serialized_challenge, content_type='application/json')
+
+class PostChallenge(View):
+    def get(self):
+        pass
+    def post(self, request):
+        print(request.POST)
