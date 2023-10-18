@@ -60,3 +60,10 @@ class PostChallenge(View):
         pass
     def post(self, request):
         print(request.POST)
+
+
+class GetUser(View):
+    def get(self, request, userID):
+        user = AppUser.objects.filter(id=userID)[0]
+        serialized_user = serialize('json', [user])
+        return HttpResponse(serialized_user, content_type='application/json')

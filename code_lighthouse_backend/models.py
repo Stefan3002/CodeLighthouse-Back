@@ -16,7 +16,7 @@ class AppUser(models.Model):
         return self.username
 
     def natural_key(self):
-        return self.username, self.email
+        return self.username, self.email, self.id
 
 
 class Challenge(models.Model):
