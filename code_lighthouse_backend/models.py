@@ -23,6 +23,7 @@ class Challenge(models.Model):
     title = models.CharField(max_length=50)
     description = models.TextField(max_length=4000)
     slug = models.SlugField(default='')
+    difficulty = models.IntegerField(default=-5)
     author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='Challenges', null=True, blank=True)
 
     def __str__(self):
