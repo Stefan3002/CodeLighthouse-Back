@@ -1,8 +1,17 @@
 from rest_framework import serializers
 
-from code_lighthouse_backend.models import Lighthouse, AppUser
+from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge
 
 
+class ChallengeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Challenge
+        fields = '__all__'
+
+    author = serializers.SerializerMethodField()
+    def get_author(self, challenge):
+        author = challenge.author
+        return AppUserSerializer(author).data
 class LighthouseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lighthouse

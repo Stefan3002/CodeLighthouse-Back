@@ -11,5 +11,6 @@ urlpatterns = [
     path('challenges/<int:lower_limit>/<int:upper_limit>', views.GetChallenges.as_view()),
     path('users/<int:userID>', views.GetUser.as_view()),
     path('lighthouses/<int:lighthouseID>', views.GetLighthouse.as_view()),
+    path('create-lighthouses', views.CreateLighthouse.as_view()),
     path('lighthouses/<int:lower_limit>/<int:upper_limit>', views.GetLighthouses.as_view())
 ]

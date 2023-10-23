@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse
-from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer
+from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer
 
 
 # Create your views here.
@@ -28,7 +28,7 @@ class Auth(APIView):
         email = request.data['email']
         password = request.data['password']
         user = AppUser.objects.filter(email=email)[0]
-        if(user.password == password):
+        if user.password == password:
             serialized_user = AppUserSerializer(user, context={'drill': True})
             return Response(serialized_user.data, status=status.HTTP_200_OK)
         else:
@@ -84,11 +84,11 @@ class GetLighthouse(APIView):
         else:
             return Response({'data': 'Sorry, the codes do not match!'}, status=status.HTTP_401_UNAUTHORIZED)
 
-class GetChallenges(View):
+class GetChallenges(APIView):
     def get(self, request, lower_limit, upper_limit):
         challenges = Challenge.objects.all()[lower_limit : upper_limit]
-        serialized_challenge = serialize('json', challenges, use_natural_foreign_keys=True)
-        return HttpResponse(serialized_challenge, content_type='application/json')
+        serialized_challenge = ChallengeSerializer(challenges, many=True)
+        return Response(serialized_challenge.data, status=status.HTTP_200_OK)
 
 
 class GetLighthouses(APIView):
@@ -111,3 +111,16 @@ class GetUser(APIView):
         # print(user.lighthouses.all()[0])
         serialized_user = AppUserSerializer(user, context={'drill': True})
         return Response(serialized_user.data, status=status.HTTP_200_OK)
+
+
+class CreateLighthouse(APIView):
+    def post(self, request):
+        data = request.data
+        name = data['name']
+        description = data['description']
+        user_id = data['user_id']
+        author = AppUser.objects.filter(user_id=user_id)[0]
+        new_lighthouse = Lighthouse(name=name, description=description, author=author)
+        new_lighthouse.save()
+        new_lighthouse.people.add(author)
+        return Response({}, status=status.HTTP_201_CREATED)
