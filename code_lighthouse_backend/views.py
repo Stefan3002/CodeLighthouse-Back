@@ -90,6 +90,14 @@ class GetChallenges(APIView):
         serialized_challenge = ChallengeSerializer(challenges, many=True)
         return Response(serialized_challenge.data, status=status.HTTP_200_OK)
 
+class Assignments(APIView):
+    def post(self, request, lighthouseID):
+        challenge_slug = request.data['selectedChallenge']
+
+        lighthouse = Lighthouse.objects.filter(id=lighthouseID)[0]
+        challenge = Challenge.objects.filter(slug=challenge_slug)[0]
+        lighthouse.assignments.add(challenge)
+        return Response({'data': 'Success!'}, status=status.HTTP_201_CREATED)
 
 class GetLighthouses(APIView):
     def get(self, request, lower_limit, upper_limit):

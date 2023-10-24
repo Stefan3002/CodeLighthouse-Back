@@ -40,6 +40,7 @@ class Lighthouse(models.Model):
     enrollment_code = models.UUIDField(default=uuid.uuid4, editable=True)
     author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_lighthouses', null=True, blank=True)
     people = models.ManyToManyField(AppUser, related_name='enrolled_Lighthouses')
+    assignments = models.ManyToManyField(Challenge, related_name='featured_in')
 
 
     def __str__(self):

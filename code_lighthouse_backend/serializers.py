@@ -9,9 +9,12 @@ class ChallengeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     author = serializers.SerializerMethodField()
+
     def get_author(self, challenge):
         author = challenge.author
         return AppUserSerializer(author).data
+
+
 class LighthouseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lighthouse
@@ -19,17 +22,33 @@ class LighthouseSerializer(serializers.ModelSerializer):
 
     author = serializers.SerializerMethodField()
     people = serializers.SerializerMethodField()
+    assignments = serializers.SerializerMethodField()
+
+    def get_assignments(self, lighthouse):
+        assignments = lighthouse.assignments
+        return ChallengeSerializer(assignments, many=True).data
 
     def get_people(self, lighthouse):
         people = lighthouse.people.all()
         return AppUserSerializer(people, many=True).data
+
     def get_author(self, lighthouse):
         author = lighthouse.author
         return AppUserSerializer(author).data
 
     # people = serializers.StringRelatedField(many=True)  # Serialize people as a list of strings (usernames)
+
+
 class AppUserSerializer(serializers.ModelSerializer):
     enrolled_lighthouses = serializers.SerializerMethodField()
+    authored_challenges = serializers.SerializerMethodField()
+
+    def get_authored_challenges(self, app_user):
+        challenges = app_user.authored_challenges.all()
+        if self.context.get('drill'):
+            return ChallengeSerializer(challenges, many=True).data
+        else:
+            return {}
 
     def get_enrolled_lighthouses(self, app_user):
         lighthouses = app_user.enrolled_Lighthouses.all()
