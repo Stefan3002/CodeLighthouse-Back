@@ -53,6 +53,7 @@ class Assignment(models.Model):
     lighthouse = models.ForeignKey(Lighthouse, related_name='featured_in', on_delete=models.DO_NOTHING, null=True)
     challenge = models.ForeignKey(Challenge, related_name='featured_in', on_delete=models.DO_NOTHING, null=True)
     users = models.ManyToManyField(AppUser, related_name='assignments')
+    finished = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.lighthouse_id} - {self.challenge} - {self.due_date}'
