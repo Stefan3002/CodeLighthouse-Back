@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge
+from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment
 
 
 class ChallengeSerializer(serializers.ModelSerializer):
@@ -15,6 +15,22 @@ class ChallengeSerializer(serializers.ModelSerializer):
         return AppUserSerializer(author).data
 
 
+class AssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assignment
+        fields = '__all__'
+
+    users = serializers.SerializerMethodField()
+    challenge = serializers.SerializerMethodField()
+
+    def get_challenge(self, lighthouse):
+        challenge = lighthouse.challenge
+        return ChallengeSerializer(challenge).data
+    def get_users(self, assignment):
+        user_ids = assignment.users.all()
+        return AppUserSerializer(user_ids, many=True).data
+
+
 class LighthouseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lighthouse
@@ -25,8 +41,8 @@ class LighthouseSerializer(serializers.ModelSerializer):
     assignments = serializers.SerializerMethodField()
 
     def get_assignments(self, lighthouse):
-        assignments = lighthouse.assignments
-        return ChallengeSerializer(assignments, many=True).data
+        assignments = Assignment.objects.filter(lighthouse=lighthouse)
+        return AssignmentSerializer(assignments, many=True).data
 
     def get_people(self, lighthouse):
         people = lighthouse.people.all()

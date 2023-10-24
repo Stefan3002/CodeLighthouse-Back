@@ -11,7 +11,7 @@ from django.views.decorators.csrf import requires_csrf_token
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse
+from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer
 
 
@@ -93,10 +93,21 @@ class GetChallenges(APIView):
 class Assignments(APIView):
     def post(self, request, lighthouseID):
         challenge_slug = request.data['selectedChallenge']
-
+        due_date = request.data['dueDate']
+        due_time = request.data['dueTime']
+        users = request.data['users']
         lighthouse = Lighthouse.objects.filter(id=lighthouseID)[0]
         challenge = Challenge.objects.filter(slug=challenge_slug)[0]
-        lighthouse.assignments.add(challenge)
+        new_assignment = Assignment(due_date=due_date, due_time=due_time, challenge=challenge, lighthouse=lighthouse)
+
+        new_assignment.save()
+
+        for user_id in users:
+            user = AppUser.objects.filter(user_id=user_id)[0]
+            new_assignment.users.add(user)
+
+
+
         return Response({'data': 'Success!'}, status=status.HTTP_201_CREATED)
 
 class GetLighthouses(APIView):
