@@ -29,6 +29,8 @@ class Challenge(models.Model):
     slug = models.SlugField(default='')
     difficulty = models.IntegerField(default=-5)
     author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_challenges', null=True, blank=True)
+    solution = models.TextField(max_length=4000, default='def true_function():')
+    random_tests = models.TextField(max_length=4000, default='def random_function():')
 
     def __str__(self):
         return self.title

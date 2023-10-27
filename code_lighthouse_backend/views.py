@@ -1,4 +1,6 @@
+import os
 import uuid
+import docker
 
 from rest_framework import serializers, status
 from django.core.serializers import serialize
@@ -35,6 +37,20 @@ class Auth(APIView):
             return Response({'data': 'Wrong credentials!'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+docker_config = {
+    'detach': True,
+    # 'command': 'sleep infinity',
+    'image': 'img',
+    # 'remove': False,
+    'tty': True,
+    # 'name': 'C1',
+    'volumes': {
+        '/volum': {
+            'bind': '/app/vol',
+            'mode': 'rw'
+        }
+    }
+}
 class RunUserCode(APIView):
     def get(self, request):
         token = get_token(request)
@@ -43,9 +59,49 @@ class RunUserCode(APIView):
         response.set_cookie('csrftoken', get_token(request))
         return response
 
-    def post(self, request):
-        print('asdasdasd', request.POST)
-        return Response({'asd': 'asd'}, status=status.HTTP_200_OK)
+    def post(self, request, slug):
+        challenge = Challenge.objects.filter(slug=slug)[0]
+        true_solution = challenge.solution
+        tests = challenge.random_tests
+        code = request.data['code']
+        print(true_solution)
+        try:
+            # Create the file with the user's code
+            with open('userFile.py', 'w') as file:
+                file.write(code)
+            # Create the file with the author's correct code
+            with open('authorFile.py', 'w') as file2:
+                file2.write(true_solution)
+            # Create the file with the author's test cases
+            with open('randomFile.py', 'w') as file3:
+                file3.write(tests)
+
+            client = docker.from_env()
+            container = client.containers.create(**docker_config)
+
+            os.system(f'docker cp userFile.py {container.name}:/app/vol/userFile.py')
+            os.system(f'docker cp authorFile.py {container.name}:/app/vol/authorFile.py')
+            os.system(f'docker cp randomFile.py {container.name}:/app/vol/randomFile.py')
+            container.start()
+            # Get the logs as a stream of bytes
+            logs = container.logs(stdout=True, stderr=True, stream=True)
+            log_bytes = b''
+            # Accumulate the bytes
+            for line in logs:
+                log_bytes += line
+            # Decode the bytes into str
+            logs_str = log_bytes.decode('utf-8')
+            print(logs_str)
+        except Exception as e:
+            return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
+        finally:
+            os.remove('userFile.py')
+            os.remove('authorFile.py')
+            os.remove('randomFile.py')
+            container.stop()
+            container.remove()
+
+        return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
 
 
 
@@ -57,11 +113,11 @@ class RandomChallenge(View):
         return HttpResponse(serialized_challenge, content_type='application/json')
 
 
-class GetChallenge(View):
+class GetChallenge(APIView):
     def get(self, request, slug):
-        challenge = Challenge.objects.filter(slug=slug)
-        serialized_challenge = serialize('json', challenge)
-        return HttpResponse(serialized_challenge, content_type='application/json')
+        challenge = Challenge.objects.filter(slug=slug)[0]
+        serialized_challenge = ChallengeSerializer(challenge)
+        return Response(serialized_challenge.data, status = status.HTTP_200_OK)
 
 
 class GetLighthouse(APIView):
