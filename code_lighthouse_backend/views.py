@@ -172,13 +172,20 @@ class GetLighthouses(APIView):
         serialized_lighthouses = LighthouseSerializer(lighthouses, many=True)
         return Response(serialized_lighthouses.data, status=status.HTTP_200_OK)
 
-class PostChallenge(View):
+class PostChallenge(APIView):
     def get(self):
         pass
     def post(self, request):
-        print(request.POST)
+        data = request.data
+        title = data['title']
+        description = data['description']
+        trueFunction = data['trueFunction']
+        randomFunction = data['randomFunction']
 
+        new_challenge = Challenge(title=title, description=description, solution=trueFunction, random_tests=randomFunction)
+        new_challenge.save()
 
+        return Response({'data': 'Success'}, status=status.HTTP_201_CREATED)
 
 class GetUser(APIView):
     def get(self, request, userID):

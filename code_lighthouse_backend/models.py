@@ -1,7 +1,9 @@
+import datetime
 import uuid
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.template.defaultfilters import slugify
 
 
 # Create your models here.
@@ -23,6 +25,12 @@ class AppUser(models.Model):
         return self.username, self.email, self.id
 
 
+class Comment(models.Model):
+    content = models.TextField(max_length=1000)
+    author = models.ForeignKey(AppUser, related_name='comments', on_delete=models.DO_NOTHING)
+    date = models.DateField(default=datetime.datetime.now())
+
+
 class Challenge(models.Model):
     title = models.CharField(max_length=50)
     description = models.TextField(max_length=4000)
@@ -31,6 +39,12 @@ class Challenge(models.Model):
     author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_challenges', null=True, blank=True)
     solution = models.TextField(max_length=4000, default='def true_function():')
     random_tests = models.TextField(max_length=4000, default='def random_function():')
+    status = models.CharField(max_length=30, default='Reviewing')
+    comments = models.ForeignKey(Comment, on_delete=models.DO_NOTHING, related_name='featured_in', blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.title)
+        return super(Challenge, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.title
