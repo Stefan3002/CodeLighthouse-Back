@@ -31,6 +31,7 @@ class Comment(models.Model):
     date = models.DateField(default=datetime.datetime.now())
 
 
+
 class Challenge(models.Model):
     title = models.CharField(max_length=50)
     description = models.TextField(max_length=4000)
@@ -73,3 +74,8 @@ class Assignment(models.Model):
 
     def __str__(self):
         return f'{self.lighthouse_id} - {self.challenge} - {self.due_date}'
+
+
+class Like(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.SET_NULL, related_name='liked_challenges', null=True)
+    challenge = models.ForeignKey(Challenge, on_delete=models.SET_NULL, null=True, related_name='likes_received')

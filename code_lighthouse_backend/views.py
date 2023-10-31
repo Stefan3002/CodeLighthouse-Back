@@ -13,7 +13,7 @@ from django.views.decorators.csrf import requires_csrf_token
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment
+from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer
 
 
@@ -112,7 +112,23 @@ class RandomChallenge(View):
         serialized_challenge = serialize('json', [challenge])
         return HttpResponse(serialized_challenge, content_type='application/json')
 
+class LikeView(APIView):
+    def post(self, request, slug):
+        try:
+            user_id = request.data['userId']
+            user = AppUser.objects.filter(user_id=user_id)[0]
+            challenge = Challenge.objects.filter(slug=slug)[0]
 
+            like = Like.objects.filter(user=user, challenge=challenge)
+            if not like:
+                newLike = Like(challenge=challenge, user=user)
+                newLike.save()
+            else:
+                like.delete()
+            return Response({"data": 'Successfully saved!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class GetChallenge(APIView):
     def get(self, request, slug):
         try:
