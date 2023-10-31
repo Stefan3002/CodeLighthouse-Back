@@ -115,9 +115,34 @@ class RandomChallenge(View):
 
 class GetChallenge(APIView):
     def get(self, request, slug):
-        challenge = Challenge.objects.filter(slug=slug)[0]
-        serialized_challenge = ChallengeSerializer(challenge)
-        return Response(serialized_challenge.data, status = status.HTTP_200_OK)
+        try:
+            challenge = Challenge.objects.filter(slug=slug)[0]
+            serialized_challenge = ChallengeSerializer(challenge)
+            return Response(serialized_challenge.data, status = status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def put(self, request, slug):
+        try:
+            challenge = Challenge.objects.filter(slug=slug)[0]
+            data = request.data
+            title = data['title']
+            description = data['description']
+            trueFunction = data['trueFunction']
+            randomFunction = data['randomFunction']
+
+            challenge.title = title
+            challenge.description = description
+            challenge.solution = trueFunction
+            challenge.random_tests = randomFunction
+
+            challenge.save()
+            return Response({"data": 'Successfully modified!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 
 class GetLighthouse(APIView):
