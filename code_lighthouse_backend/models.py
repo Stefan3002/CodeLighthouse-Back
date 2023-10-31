@@ -17,7 +17,7 @@ class AppUser(models.Model):
     username = models.CharField(max_length=50)
     email = models.EmailField(default='')
     user_id = models.UUIDField(default=uuid.uuid4, editable=True)
-
+    solved_challenges = models.ManyToManyField('Challenge', null=True)
     def __str__(self):
         return self.username
 

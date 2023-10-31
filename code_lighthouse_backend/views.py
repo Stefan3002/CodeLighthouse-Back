@@ -1,4 +1,5 @@
 import os
+import subprocess
 import uuid
 import docker
 
@@ -64,7 +65,7 @@ class RunUserCode(APIView):
         true_solution = challenge.solution
         tests = challenge.random_tests
         code = request.data['code']
-        print(true_solution)
+        user_id = request.data['userId']
         try:
             # Create the file with the user's code
             with open('userFile.py', 'w') as file:
@@ -92,6 +93,19 @@ class RunUserCode(APIView):
             # Decode the bytes into str
             logs_str = log_bytes.decode('utf-8')
             print(logs_str)
+
+            exit_code = subprocess.check_output(["docker", "wait", container.name])
+
+            exit_code = exit_code.decode("utf-8").strip()
+            exit_code = int(exit_code)
+
+
+            if exit_code == 0:
+                user = AppUser.objects.get(user_id=user_id)
+                user.solved_challenges.add(challenge)
+            else:
+                print('NOOOOOOO!!')
+
         except Exception as e:
             return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
         finally:
