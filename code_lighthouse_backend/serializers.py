@@ -4,9 +4,13 @@ from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assig
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = ['content', 'id', 'author']
+    def get_author(self, comment):
+        author = comment.author
+        return AppUserSerializer(author).data
 
 class ChallengeSerializer(serializers.ModelSerializer):
     class Meta:

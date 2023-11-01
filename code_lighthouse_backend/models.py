@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from time import timezone
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -8,16 +9,15 @@ from django.template.defaultfilters import slugify
 
 # Create your models here.
 
-class AppUser:
-    pass
 
 
 class AppUser(models.Model):
     password = models.CharField(max_length=50, default='')
     username = models.CharField(max_length=50)
     email = models.EmailField(default='')
+    score = models.IntegerField(max_length=10, default=0)
     user_id = models.UUIDField(default=uuid.uuid4, editable=True)
-    solved_challenges = models.ManyToManyField('Challenge', null=True)
+    solved_challenges = models.ManyToManyField('Challenge', null=True, blank=True)
     def __str__(self):
         return self.username
 
@@ -28,9 +28,11 @@ class AppUser(models.Model):
 class Comment(models.Model):
     content = models.TextField(max_length=1000)
     author = models.ForeignKey(AppUser, related_name='comments', on_delete=models.DO_NOTHING)
-    date = models.DateField(default=datetime.datetime.now())
+    # date = models.DateField(default=datetime.datetime.now)
+    challenge = models.ForeignKey('Challenge', on_delete=models.DO_NOTHING, related_name='comments', blank=True, null=True)
 
-
+    def __str__(self):
+        return f'{self.author} on {self.challenge}'
 
 class Challenge(models.Model):
     title = models.CharField(max_length=50)
@@ -41,7 +43,6 @@ class Challenge(models.Model):
     solution = models.TextField(max_length=4000, default='def true_function():')
     random_tests = models.TextField(max_length=4000, default='def random_function():')
     status = models.CharField(max_length=30, default='Reviewing')
-    comments = models.ForeignKey(Comment, on_delete=models.DO_NOTHING, related_name='featured_in', blank=True, null=True)
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)

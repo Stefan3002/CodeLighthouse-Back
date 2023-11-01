@@ -1,3 +1,4 @@
+import datetime
 import os
 import subprocess
 import uuid
@@ -14,9 +15,22 @@ from django.views.decorators.csrf import requires_csrf_token
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like
+from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer
 
+
+SCORES = {
+    -5: 100,
+    -4: 500,
+    -3: 1000,
+    -2: 1500,
+    -1: 2000,
+    1: 4000,
+    2: 5000,
+    3: 6000,
+    4: 7000,
+    5: 10000
+}
 
 # Create your views here.
 
@@ -103,6 +117,8 @@ class RunUserCode(APIView):
             if exit_code == 0:
                 user = AppUser.objects.get(user_id=user_id)
                 user.solved_challenges.add(challenge)
+                user.score += SCORES[challenge.difficulty]
+                user.save()
             else:
                 print('NOOOOOOO!!')
 
@@ -118,6 +134,21 @@ class RunUserCode(APIView):
         return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
 
 
+class CommentsView(APIView):
+    def post(self, request, slug):
+        try:
+            data = request.data
+            user_id = request.data['userId']
+            content = request.data['content']
+            challenge = Challenge.objects.get(slug=slug)
+            user = AppUser.objects.get(user_id=user_id)
+            new_comment = Comment(content=content, author=user, challenge=challenge)
+            print(new_comment)
+            new_comment.save()
+            return Response({"data": 'Successfully saved!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class RandomChallenge(View):
     def get(self, request):
