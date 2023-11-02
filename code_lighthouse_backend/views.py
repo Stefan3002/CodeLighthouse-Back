@@ -153,7 +153,6 @@ class CommentsView(APIView):
 class RandomChallenge(View):
     def get(self, request):
         challenge = Challenge.objects.order_by('?')[0]
-        print('asdasd', challenge)
         serialized_challenge = serialize('json', [challenge])
         return HttpResponse(serialized_challenge, content_type='application/json')
 
@@ -228,7 +227,7 @@ class GetLighthouse(APIView):
 
 class GetChallenges(APIView):
     def get(self, request, lower_limit, upper_limit):
-        challenges = Challenge.objects.all()[lower_limit : upper_limit]
+        challenges = Challenge.objects.all().order_by('?')[lower_limit : upper_limit]
         serialized_challenge = ChallengeSerializer(challenges, many=True)
         return Response(serialized_challenge.data, status=status.HTTP_200_OK)
 
