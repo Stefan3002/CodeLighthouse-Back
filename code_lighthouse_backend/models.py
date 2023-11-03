@@ -40,8 +40,7 @@ class Challenge(models.Model):
     slug = models.SlugField(default='')
     difficulty = models.IntegerField(default=-5)
     author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_challenges', null=True, blank=True)
-    solution = models.TextField(max_length=4000, default='def true_function():')
-    random_tests = models.TextField(max_length=4000, default='def random_function():')
+
     status = models.CharField(max_length=30, default='Reviewing')
 
     def save(self, *args, **kwargs):
@@ -51,7 +50,14 @@ class Challenge(models.Model):
     def __str__(self):
         return self.title
 
+class Code(models.Model):
+    challenge = models.ForeignKey(Challenge, related_name='codes',  on_delete=models.SET_NULL, null=True)
+    language = models.CharField(max_length=50)
+    solution = models.TextField(max_length=4000, default='def true_function():')
+    random_tests = models.TextField(max_length=4000, default='def random_function():')
 
+    def __str__(self):
+        return f'{self.challenge}, {self.language}'
 
 
 class Lighthouse(models.Model):

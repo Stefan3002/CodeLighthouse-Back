@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment, Comment, Like
+from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment, Comment, Like, Code
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -12,6 +12,12 @@ class CommentSerializer(serializers.ModelSerializer):
         author = comment.author
         return AppUserSerializer(author).data
 
+
+class CodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Code
+        fields = '__all__'
+
 class ChallengeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Challenge
@@ -20,6 +26,11 @@ class ChallengeSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
     likes_received = serializers.SerializerMethodField()
+    codes = serializers.SerializerMethodField()
+
+    def get_codes(self, challenge):
+        codes = challenge.codes
+        return CodeSerializer(codes, many=True).data
 
     def get_likes_received(self, challenge):
         likes = challenge.likes_received
