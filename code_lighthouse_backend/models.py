@@ -52,6 +52,8 @@ class Challenge(models.Model):
         return self.title
 
 
+
+
 class Lighthouse(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField(max_length=1000)

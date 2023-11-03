@@ -18,7 +18,6 @@ from rest_framework.views import APIView
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer
 
-
 SCORES = {
     -5: 100,
     -4: 500,
@@ -32,6 +31,7 @@ SCORES = {
     5: 10000
 }
 
+
 # Create your views here.
 
 class Auth(APIView):
@@ -41,6 +41,7 @@ class Auth(APIView):
         response = HttpResponse(data, content_type='application/json')
         response.set_cookie('csrftoken', get_token(request))
         return response
+
     def post(self, request):
         email = request.data['email']
         password = request.data['password']
@@ -66,6 +67,154 @@ docker_config = {
         }
     }
 }
+
+docker_config_js = {
+    'detach': True,
+    # 'command': 'sleep infinity',
+    'image': 'node_cl_img',
+    # 'remove': False,
+    'tty': True,
+    # 'name': 'C1',
+    'volumes': {
+        '/volum': {
+            'bind': '/app/vol',
+            'mode': 'rw'
+        }
+    }
+}
+
+
+def runPythonCode(request, slug):
+    challenge = Challenge.objects.filter(slug=slug)[0]
+    true_solution = challenge.solution
+    tests = challenge.random_tests
+    code = request.data['code']
+    user_id = request.data['userId']
+    try:
+        # Create the file with the user's code
+        with open('userFile.py', 'w') as file:
+            file.write(code)
+        # Create the file with the author's correct code
+        with open('authorFile.py', 'w') as file2:
+            file2.write(true_solution)
+        # Create the file with the author's test cases
+        with open('randomFile.py', 'w') as file3:
+            file3.write(tests)
+
+        client = docker.from_env()
+        container = client.containers.create(**docker_config)
+
+        os.system(f'docker cp userFile.py {container.name}:/app/vol/userFile.py')
+        os.system(f'docker cp authorFile.py {container.name}:/app/vol/authorFile.py')
+        os.system(f'docker cp randomFile.py {container.name}:/app/vol/randomFile.py')
+        container.start()
+        # Get the logs as a stream of bytes
+        logs = container.logs(stdout=True, stderr=True, stream=True)
+        log_bytes = b''
+        # Accumulate the bytes
+        for line in logs:
+            log_bytes += line
+        # Decode the bytes into str
+        logs_str = log_bytes.decode('utf-8')
+        print(logs_str)
+
+        exit_code = subprocess.check_output(["docker", "wait", container.name])
+
+        exit_code = exit_code.decode("utf-8").strip()
+        exit_code = int(exit_code)
+
+        if exit_code == 0:
+            user = AppUser.objects.get(user_id=user_id)
+            user.solved_challenges.add(challenge)
+            user.score += SCORES[challenge.difficulty]
+            user.save()
+        else:
+            print('NOOOOOOO!!')
+
+    except Exception as e:
+        raise Exception(e)
+        # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
+    finally:
+        os.remove('userFile.py')
+        os.remove('authorFile.py')
+        os.remove('randomFile.py')
+        container.stop()
+        container.remove()
+
+    return logs_str
+    # return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
+
+
+def runJavascriptCode(request, slug):
+    challenge = Challenge.objects.filter(slug=slug)[0]
+    true_solution = """const trueFunction = (inputs) => {
+    return inputs.reduce((acc, n) => acc + n, 0)
+}
+module.exports = trueFunction"""
+    # tests = challenge.random_tests
+    tests = """
+    const randomFile = () => {
+    return [[1], [2], [3, 6, 7]]
+}
+
+module.exports = randomFile
+    """
+    code = request.data['code']
+    user_id = request.data['userId']
+    try:
+        # Create the file with the user's code
+        with open('userFile.js', 'w') as file:
+            file.write(code)
+        # Create the file with the author's correct code
+        with open('authorFile.js', 'w') as file2:
+            file2.write(true_solution)
+        # Create the file with the author's test cases
+        with open('randomFile.js', 'w') as file3:
+            file3.write(tests)
+
+        client = docker.from_env()
+        container = client.containers.create(**docker_config_js)
+
+        os.system(f'docker cp userFile.js {container.name}:/app/vol/userFile.js')
+        os.system(f'docker cp authorFile.js {container.name}:/app/vol/authorFile.js')
+        os.system(f'docker cp randomFile.js {container.name}:/app/vol/randomFile.js')
+        container.start()
+        # Get the logs as a stream of bytes
+        logs = container.logs(stdout=True, stderr=True, stream=True)
+        log_bytes = b''
+        # Accumulate the bytes
+        for line in logs:
+            log_bytes += line
+        # Decode the bytes into str
+        logs_str = log_bytes.decode('utf-8', errors='replace').replace('\u2714', '')
+        print(logs_str)
+
+        exit_code = subprocess.check_output(["docker", "wait", container.name])
+
+        exit_code = exit_code.decode("utf-8").strip()
+        exit_code = int(exit_code)
+
+        if exit_code == 0:
+            user = AppUser.objects.get(user_id=user_id)
+            user.solved_challenges.add(challenge)
+            user.score += SCORES[challenge.difficulty]
+            user.save()
+        else:
+            print('NOOOOOOO!!')
+
+    except Exception as e:
+        raise Exception(e)
+        # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
+    finally:
+        os.remove('userFile.js')
+        os.remove('authorFile.js')
+        os.remove('randomFile.js')
+        container.stop()
+        container.remove()
+
+    return logs_str
+
+
 class RunUserCode(APIView):
     def get(self, request):
         token = get_token(request)
@@ -75,63 +224,25 @@ class RunUserCode(APIView):
         return response
 
     def post(self, request, slug):
-        challenge = Challenge.objects.filter(slug=slug)[0]
-        true_solution = challenge.solution
-        tests = challenge.random_tests
-        code = request.data['code']
-        user_id = request.data['userId']
-        try:
-            # Create the file with the user's code
-            with open('userFile.py', 'w') as file:
-                file.write(code)
-            # Create the file with the author's correct code
-            with open('authorFile.py', 'w') as file2:
-                file2.write(true_solution)
-            # Create the file with the author's test cases
-            with open('randomFile.py', 'w') as file3:
-                file3.write(tests)
+        data = request.data
+        language = data['language']
+        if language == 'python':
+            try:
+                logs_str = runPythonCode(request, slug)
+            except Exception as e:
+                return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            client = docker.from_env()
-            container = client.containers.create(**docker_config)
+            return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
 
-            os.system(f'docker cp userFile.py {container.name}:/app/vol/userFile.py')
-            os.system(f'docker cp authorFile.py {container.name}:/app/vol/authorFile.py')
-            os.system(f'docker cp randomFile.py {container.name}:/app/vol/randomFile.py')
-            container.start()
-            # Get the logs as a stream of bytes
-            logs = container.logs(stdout=True, stderr=True, stream=True)
-            log_bytes = b''
-            # Accumulate the bytes
-            for line in logs:
-                log_bytes += line
-            # Decode the bytes into str
-            logs_str = log_bytes.decode('utf-8')
-            print(logs_str)
+        elif language == 'javascript':
+            try:
+                logs_str = runJavascriptCode(request, slug)
+                print(logs_str)
+            except Exception as e:
+                print(e)
+                return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            exit_code = subprocess.check_output(["docker", "wait", container.name])
-
-            exit_code = exit_code.decode("utf-8").strip()
-            exit_code = int(exit_code)
-
-
-            if exit_code == 0:
-                user = AppUser.objects.get(user_id=user_id)
-                user.solved_challenges.add(challenge)
-                user.score += SCORES[challenge.difficulty]
-                user.save()
-            else:
-                print('NOOOOOOO!!')
-
-        except Exception as e:
-            return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
-        finally:
-            os.remove('userFile.py')
-            os.remove('authorFile.py')
-            os.remove('randomFile.py')
-            container.stop()
-            container.remove()
-
-        return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
+            return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
 
 
 class CommentsView(APIView):
@@ -150,11 +261,13 @@ class CommentsView(APIView):
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class RandomChallenge(View):
     def get(self, request):
         challenge = Challenge.objects.order_by('?')[0]
         serialized_challenge = serialize('json', [challenge])
         return HttpResponse(serialized_challenge, content_type='application/json')
+
 
 class LikeView(APIView):
     def post(self, request, slug):
@@ -173,15 +286,18 @@ class LikeView(APIView):
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class GetChallenge(APIView):
     def get(self, request, slug):
         try:
             challenge = Challenge.objects.filter(slug=slug)[0]
             serialized_challenge = ChallengeSerializer(challenge)
-            return Response(serialized_challenge.data, status = status.HTTP_200_OK)
+            return Response(serialized_challenge.data, status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def put(self, request, slug):
         try:
             challenge = Challenge.objects.filter(slug=slug)[0]
@@ -201,8 +317,6 @@ class GetChallenge(APIView):
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 
 
 class GetLighthouse(APIView):
@@ -225,11 +339,13 @@ class GetLighthouse(APIView):
         else:
             return Response({'data': 'Sorry, the codes do not match!'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 class GetChallenges(APIView):
     def get(self, request, lower_limit, upper_limit):
-        challenges = Challenge.objects.all().order_by('?')[lower_limit : upper_limit]
+        challenges = Challenge.objects.all().order_by('?')[lower_limit: upper_limit]
         serialized_challenge = ChallengeSerializer(challenges, many=True)
         return Response(serialized_challenge.data, status=status.HTTP_200_OK)
+
 
 class Assignments(APIView):
     def post(self, request, lighthouseID):
@@ -247,19 +363,20 @@ class Assignments(APIView):
             user = AppUser.objects.filter(user_id=user_id)[0]
             new_assignment.users.add(user)
 
-
-
         return Response({'data': 'Success!'}, status=status.HTTP_201_CREATED)
+
 
 class GetLighthouses(APIView):
     def get(self, request, lower_limit, upper_limit):
-        lighthouses = Lighthouse.objects.all()[lower_limit : upper_limit]
+        lighthouses = Lighthouse.objects.all()[lower_limit: upper_limit]
         serialized_lighthouses = LighthouseSerializer(lighthouses, many=True)
         return Response(serialized_lighthouses.data, status=status.HTTP_200_OK)
+
 
 class PostChallenge(APIView):
     def get(self):
         pass
+
     def post(self, request):
         data = request.data
         title = data['title']
@@ -267,10 +384,12 @@ class PostChallenge(APIView):
         trueFunction = data['trueFunction']
         randomFunction = data['randomFunction']
 
-        new_challenge = Challenge(title=title, description=description, solution=trueFunction, random_tests=randomFunction)
+        new_challenge = Challenge(title=title, description=description, solution=trueFunction,
+                                  random_tests=randomFunction)
         new_challenge.save()
 
         return Response({'data': 'Success'}, status=status.HTTP_201_CREATED)
+
 
 class GetUser(APIView):
     def get(self, request, userID):
