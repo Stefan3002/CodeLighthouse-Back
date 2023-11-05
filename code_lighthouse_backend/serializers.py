@@ -25,7 +25,14 @@ class SubmissionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     user = serializers.SerializerMethodField()
+    challenge = serializers.SerializerMethodField()
 
+    def get_challenge(self, submission):
+        challenge = submission.challenge
+        # if self.context.get('drill'):
+        return challenge.slug
+        # else:
+        #     return {}
     def get_user(self, submission):
         user = submission.user
         return AppUserSerializer(user).data
@@ -40,6 +47,12 @@ class ChallengeSerializer(serializers.ModelSerializer):
     comments = serializers.SerializerMethodField()
     likes_received = serializers.SerializerMethodField()
     codes = serializers.SerializerMethodField()
+    submissions = serializers.SerializerMethodField()
+
+    def get_submissions(self, challenge):
+        submissions = challenge.challenge_submissions.all()
+        return SubmissionSerializer(submissions, many=True).data
+
 
     def get_codes(self, challenge):
         codes = challenge.codes
@@ -109,7 +122,7 @@ class AppUserSerializer(serializers.ModelSerializer):
     submissions = serializers.SerializerMethodField()
 
     def get_submissions(self, app_user):
-        submissions = app_user.submissions
+        submissions = app_user.submissions.all()
         if self.context.get('drill'):
             return SubmissionSerializer(submissions, many=True).data
         else:
@@ -134,5 +147,4 @@ class AppUserSerializer(serializers.ModelSerializer):
     # lighthouses = LighthouseSerializer(many=True, read_only=True, source='lighthouses.all')
     class Meta:
         model = AppUser
-        # depth = 2
-        fields = '__all__'
+        exclude = ['password', 'email']

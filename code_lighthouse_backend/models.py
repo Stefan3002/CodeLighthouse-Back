@@ -92,10 +92,11 @@ class Like(models.Model):
 
 class Submission(models.Model):
     user = models.ForeignKey(AppUser, on_delete=models.SET_NULL, related_name='submissions', null=True)
-    challenge = models.ForeignKey(Challenge, on_delete=models.SET_NULL, null=True, related_name='submissions')
+    challenge = models.ForeignKey(Challenge, on_delete=models.SET_NULL, null=True, related_name='challenge_submissions')
     date = models.DateField(default=datetime.datetime.now())
     time = models.TimeField(default=datetime.datetime.now())
     code = models.TextField(max_length=4000, blank=True)
+    language = models.CharField(max_length=50, default='Python')
 
     def __str__(self):
         return f'{self.user} on {self.challenge} on {self.date} - {self.time}'
