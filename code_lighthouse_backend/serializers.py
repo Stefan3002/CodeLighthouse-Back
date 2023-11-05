@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment, Comment, Like, Code
+from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment, Comment, Like, Code, Submission
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -17,6 +17,19 @@ class CodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Code
         fields = '__all__'
+
+
+class SubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Submission
+        fields = '__all__'
+
+    user = serializers.SerializerMethodField()
+
+    def get_user(self, submission):
+        user = submission.user
+        return AppUserSerializer(user).data
+
 
 class ChallengeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -93,7 +106,14 @@ class AppUserSerializer(serializers.ModelSerializer):
     enrolled_lighthouses = serializers.SerializerMethodField()
     authored_challenges = serializers.SerializerMethodField()
     liked_challenges = serializers.SerializerMethodField()
+    submissions = serializers.SerializerMethodField()
 
+    def get_submissions(self, app_user):
+        submissions = app_user.submissions
+        if self.context.get('drill'):
+            return SubmissionSerializer(submissions, many=True).data
+        else:
+            return {}
     def get_liked_challenges(self, app_user):
         liked_challenges = app_user.liked_challenges
         return LikeSerializer(liked_challenges, many=True).data

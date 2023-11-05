@@ -168,7 +168,7 @@ class GetLighthouse(APIView):
 
 class GetChallenges(APIView):
     def get(self, request, lower_limit, upper_limit):
-        challenges = Challenge.objects.all().order_by('?')[lower_limit: upper_limit]
+        challenges = Challenge.objects.all().order_by('-id')[lower_limit: upper_limit]
         serialized_challenge = ChallengeSerializer(challenges, many=True)
         return Response(serialized_challenge.data, status=status.HTTP_200_OK)
 

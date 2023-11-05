@@ -88,3 +88,14 @@ class Assignment(models.Model):
 class Like(models.Model):
     user = models.ForeignKey(AppUser, on_delete=models.SET_NULL, related_name='liked_challenges', null=True)
     challenge = models.ForeignKey(Challenge, on_delete=models.SET_NULL, null=True, related_name='likes_received')
+
+
+class Submission(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.SET_NULL, related_name='submissions', null=True)
+    challenge = models.ForeignKey(Challenge, on_delete=models.SET_NULL, null=True, related_name='submissions')
+    date = models.DateField(default=datetime.datetime.now())
+    time = models.TimeField(default=datetime.datetime.now())
+    code = models.TextField(max_length=4000, blank=True)
+
+    def __str__(self):
+        return f'{self.user} on {self.challenge} on {self.date} - {self.time}'

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Comment, Like, Code
+from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Comment, Like, Code, Submission
 
 # Register your models here.
 
@@ -11,3 +11,4 @@ admin.site.register(Assignment)
 admin.site.register(Comment)
 admin.site.register(Like)
 admin.site.register(Code)
+admin.site.register(Submission)
