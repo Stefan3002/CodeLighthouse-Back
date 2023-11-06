@@ -18,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code
-from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode
+from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer
 
 
@@ -47,6 +47,7 @@ class RunUserCode(APIView):
     def post(self, request, slug):
         data = request.data
         language = data['language']
+
         if language == 'Python':
             try:
                 logs_str = runPythonCode(request, slug)
@@ -58,6 +59,16 @@ class RunUserCode(APIView):
         elif language == 'Javascript':
             try:
                 logs_str = runJavascriptCode(request, slug)
+                print(logs_str)
+            except Exception as e:
+                print(e)
+                return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            return Response({'data': logs_str}, status=status.HTTP_200_OK)
+
+        elif language == 'Ruby':
+            try:
+                logs_str = runRubyCode(request, slug)
                 print(logs_str)
             except Exception as e:
                 print(e)
@@ -129,15 +140,20 @@ class GetChallenge(APIView):
             true_function = data['trueFunction']
             random_function = data['randomFunction']
 
+
             challenge.title = title
             challenge.description = description
 
-            code = Code.objects.get(Q(challenge=challenge) & Q(language=language))
+            code = None
 
-            code.random_tests = random_function
-            code.solution = true_function
-
-            code.save()
+            try:
+                code = Code.objects.get(Q(challenge=challenge) & Q(language=language))
+                code.random_tests = random_function
+                code.solution = true_function
+            except Exception as e:
+                code = Code(challenge=challenge, solution=true_function, language=language, random_tests=random_function)
+            finally:
+                code.save()
 
             challenge.save()
             return Response({"data": 'Successfully modified!'}, status=status.HTTP_201_CREATED)

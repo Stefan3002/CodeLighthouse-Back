@@ -5,7 +5,7 @@ import docker
 from django.db import transaction
 from django.db.models import Q
 
-from code_lighthouse_backend.dockerConfigurations import docker_config, docker_config_js
+from code_lighthouse_backend.dockerConfigurations import docker_config, docker_config_js, docker_config_ruby
 from code_lighthouse_backend.models import Challenge, AppUser, Code, Submission
 
 SCORES = {
@@ -40,15 +40,35 @@ def checkExitCode(exit_code, user_id, challenge, code, language):
 
 
 def removeFilesFromSystem(container, language):
+    user_file = ''
+    author_file = ''
+    random_file = ''
+
     extension = ''
+    case = ''
+
     if language == 'Python':
         extension = '.py'
+        case = 'Camel'
     elif language == 'Javascript':
         extension = '.js'
+        case = 'Camel'
+    elif language == 'Ruby':
+        extension = '.rb'
+        case = 'Snake'
 
-    os.remove(f'userFile{extension}')
-    os.remove(f'authorFile{extension}')
-    os.remove(f'randomFile{extension}')
+    if case == 'Snake':
+        user_file = f'user_file{extension}'
+        author_file = f'author_file{extension}'
+        random_file = f'random_file{extension}'
+    elif case == 'Camel':
+        user_file = f'userFile{extension}'
+        author_file = f'authorFile{extension}'
+        random_file = f'randomFile{extension}'
+
+    os.remove(user_file)
+    os.remove(author_file)
+    os.remove(random_file)
     container.stop()
     container.remove()
 
@@ -154,5 +174,56 @@ def runJavascriptCode(request, slug):
         # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
     finally:
         removeFilesFromSystem(container, 'Javascript')
+
+    return logs_str
+
+def runRubyCode(request, slug):
+    challenge = Challenge.objects.filter(slug=slug)[0]
+    challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Ruby'))
+    true_solution = challenge_code.solution
+    tests = challenge_code.random_tests
+    code = request.data['code']
+    user_id = request.data['userId']
+    try:
+        with transaction.atomic():
+            # Create the file with the user's code
+            with open('user_file.rb', 'w') as file:
+                file.write(code)
+            # Create the file with the author's correct code
+            with open('author_file.rb', 'w') as file2:
+                file2.write(true_solution)
+            # Create the file with the author's test cases
+            with open('random_file.rb', 'w') as file3:
+                file3.write(tests)
+
+            client = docker.from_env()
+            container = client.containers.create(**docker_config_ruby)
+
+            os.system(f'docker cp user_file.rb {container.name}:/app/vol/user_file.rb')
+            os.system(f'docker cp author_file.rb {container.name}:/app/vol/author_file.rb')
+            os.system(f'docker cp random_file.rb {container.name}:/app/vol/random_file.rb')
+            container.start()
+            # Get the logs as a stream of bytes
+            logs = container.logs(stdout=True, stderr=True, stream=True)
+            log_bytes = b''
+            # Accumulate the bytes
+            for line in logs:
+                log_bytes += line
+            # Decode the bytes into str
+            logs_str = log_bytes.decode('utf-8', errors='replace').replace('\u2714', '')
+            print(logs_str)
+
+            exit_code = subprocess.check_output(["docker", "wait", container.name])
+
+            exit_code = exit_code.decode("utf-8").strip()
+            exit_code = int(exit_code)
+
+            checkExitCode(exit_code, user_id, challenge, code, 'Ruby')
+
+    except Exception as e:
+        raise Exception(e)
+        # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
+    finally:
+        removeFilesFromSystem(container, 'Ruby')
 
     return logs_str
