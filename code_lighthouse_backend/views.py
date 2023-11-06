@@ -3,6 +3,7 @@ import os
 import subprocess
 import uuid
 import docker
+from django.db import transaction
 from django.db.models import Q
 
 from rest_framework import serializers, status
@@ -207,12 +208,20 @@ class PostChallenge(APIView):
         data = request.data
         title = data['title']
         description = data['description']
-        trueFunction = data['trueFunction']
-        randomFunction = data['randomFunction']
+        true_function = data['trueFunction']
+        random_function = data['randomFunction']
+        language = data['language']
+        user_id = data['userId']
+        user = AppUser.objects.get(user_id=user_id)
 
-        new_challenge = Challenge(title=title, description=description, solution=trueFunction,
-                                  random_tests=randomFunction)
-        new_challenge.save()
+        try:
+            with transaction.atomic():
+                new_challenge = Challenge(title=title, description=description, author=user)
+                new_challenge.save()
+                new_code = Code(challenge=new_challenge, language=language, solution=true_function, random_tests=random_function)
+                new_code.save()
+        except Exception as e:
+            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({'data': 'Success'}, status=status.HTTP_201_CREATED)
 
