@@ -19,7 +19,8 @@ from rest_framework.views import APIView
 
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
-from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer
+from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
+    SubmissionSerializer
 
 
 # Create your views here.
@@ -76,6 +77,27 @@ class RunUserCode(APIView):
 
             return Response({'data': logs_str}, status=status.HTTP_200_OK)
 
+
+class GetAssignmentSubmissionsView(APIView):
+    def get(self, request, assignment_id):
+        try:
+            assignment = Assignment.objects.get(id=assignment_id)
+
+            challenge = assignment.challenge
+            submissions = challenge.challenge_submissions.all()
+            users = assignment.users.all()
+
+
+            returned_submissions = []
+
+            for submission in submissions:
+                if submission.user in users:
+                    returned_submissions.append(submission)
+
+            return Response(SubmissionSerializer(returned_submissions, many=True).data, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CommentsView(APIView):
     def post(self, request, slug):

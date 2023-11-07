@@ -8,6 +8,7 @@ urlpatterns = [
     path('random-challenge', views.RandomChallenge.as_view()),
     path('like/<slug:slug>', views.LikeView.as_view()),
     path('challenges', views.PostChallenge.as_view()),
+    path('submissions/<int:assignment_id>', views.GetAssignmentSubmissionsView.as_view()),
     path('challenges/<slug:slug>/comments', views.CommentsView.as_view()),
     path('challenges/<slug:slug>', views.GetChallenge.as_view()),
     path('challenges/<int:lower_limit>/<int:upper_limit>', views.GetChallenges.as_view()),
