@@ -5,9 +5,11 @@ from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assig
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
+
     class Meta:
         model = Comment
         fields = ['content', 'id', 'author']
+
     def get_author(self, comment):
         author = comment.author
         return AppUserSerializer(author).data
@@ -33,6 +35,7 @@ class SubmissionSerializer(serializers.ModelSerializer):
         return challenge.slug
         # else:
         #     return {}
+
     def get_user(self, submission):
         user = submission.user
         return AppUserSerializer(user).data
@@ -53,7 +56,6 @@ class ChallengeSerializer(serializers.ModelSerializer):
         submissions = challenge.challenge_submissions.all()
         return SubmissionSerializer(submissions, many=True).data
 
-
     def get_codes(self, challenge):
         codes = challenge.codes
         return CodeSerializer(codes, many=True).data
@@ -65,6 +67,7 @@ class ChallengeSerializer(serializers.ModelSerializer):
     def get_comments(self, challenge):
         comments = challenge.comments
         return CommentSerializer(comments, many=True).data
+
     def get_author(self, challenge):
         author = challenge.author
         return AppUserSerializer(author).data
@@ -81,6 +84,7 @@ class AssignmentSerializer(serializers.ModelSerializer):
     def get_challenge(self, lighthouse):
         challenge = lighthouse.challenge
         return ChallengeSerializer(challenge).data
+
     def get_users(self, assignment):
         user_ids = assignment.users.all()
         return AppUserSerializer(user_ids, many=True).data
@@ -115,6 +119,7 @@ class LikeSerializer(serializers.ModelSerializer):
         model = Like
         fields = '__all__'
 
+
 class AppUserSerializer(serializers.ModelSerializer):
     enrolled_lighthouses = serializers.SerializerMethodField()
     authored_challenges = serializers.SerializerMethodField()
@@ -127,9 +132,11 @@ class AppUserSerializer(serializers.ModelSerializer):
             return SubmissionSerializer(submissions, many=True).data
         else:
             return {}
+
     def get_liked_challenges(self, app_user):
         liked_challenges = app_user.liked_challenges
         return LikeSerializer(liked_challenges, many=True).data
+
     def get_authored_challenges(self, app_user):
         challenges = app_user.authored_challenges.all()
         if self.context.get('drill'):
@@ -148,3 +155,5 @@ class AppUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppUser
         exclude = ['password', 'email']
+
+

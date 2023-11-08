@@ -84,20 +84,23 @@ class GetAssignmentSubmissionsView(APIView):
             assignment = Assignment.objects.get(id=assignment_id)
 
             challenge = assignment.challenge
-            submissions = challenge.challenge_submissions.all()
-            users = assignment.users.all()
+            submissions = challenge.challenge_submissions.all().order_by('user')
+            users = assignment.users.all().order_by('username')
 
-
-            returned_submissions = []
+            returned_submissions = {}
 
             for submission in submissions:
                 if submission.user in users:
-                    returned_submissions.append(submission)
+                    username = submission.user.username
+                    data = (returned_submissions.get(username, []))
+                    data.append(SubmissionSerializer(submission).data)
+                    returned_submissions[username] = data
 
-            return Response(SubmissionSerializer(returned_submissions, many=True).data, status=status.HTTP_200_OK)
+            return Response(returned_submissions, status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class CommentsView(APIView):
     def post(self, request, slug):
@@ -162,7 +165,6 @@ class GetChallenge(APIView):
             true_function = data['trueFunction']
             random_function = data['randomFunction']
 
-
             challenge.title = title
             challenge.description = description
 
@@ -173,7 +175,8 @@ class GetChallenge(APIView):
                 code.random_tests = random_function
                 code.solution = true_function
             except Exception as e:
-                code = Code(challenge=challenge, solution=true_function, language=language, random_tests=random_function)
+                code = Code(challenge=challenge, solution=true_function, language=language,
+                            random_tests=random_function)
             finally:
                 code.save()
 
@@ -256,7 +259,8 @@ class PostChallenge(APIView):
             with transaction.atomic():
                 new_challenge = Challenge(title=title, description=description, author=user)
                 new_challenge.save()
-                new_code = Code(challenge=new_challenge, language=language, solution=true_function, random_tests=random_function)
+                new_code = Code(challenge=new_challenge, language=language, solution=true_function,
+                                random_tests=random_function)
                 new_code.save()
         except Exception as e:
             return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
