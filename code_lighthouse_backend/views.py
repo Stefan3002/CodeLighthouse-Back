@@ -14,7 +14,7 @@ from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assig
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer
-from code_lighthouse_backend.utils import retrieve_token
+from code_lighthouse_backend.utils import retrieve_token, retrieve_secret, get_request_user_id
 
 
 class Auth(APIView):
@@ -298,18 +298,15 @@ class GetUser(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, userID):
 
+        decoded_user_id = get_request_user_id(request)
 
-        token = retrieve_token(request)
-
-        print(jwt.decode(token, 'django-insecure-op_4k4#z)fnvu%8jw01#o*n*3@@8)l*s7kiogd4i400f+qakw0',
-                         algorithms=["HS256"]))
-
-
-
-        user = AppUser.objects.filter(id=userID)[0]
-        # print(user.lighthouses.all()[0])
-        serialized_user = AppUserSerializer(user, context={'drill': True})
-        return Response(serialized_user.data, status=status.HTTP_200_OK)
+        if decoded_user_id == userID:
+            user = AppUser.objects.filter(id=userID)[0]
+            # print(user.lighthouses.all()[0])
+            serialized_user = AppUserSerializer(user, context={'drill': True})
+            return Response(serialized_user.data, status=status.HTTP_200_OK)
+        else:
+            return Response({'data': 'Forbidden info!'}, status=status.HTTP_403_FORBIDDEN)
 
 
 class CreateLighthouse(APIView):
