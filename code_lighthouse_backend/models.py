@@ -48,7 +48,7 @@ class Challenge(models.Model):
         return super(Challenge, self).save(*args, **kwargs)
 
     def __str__(self):
-        return self.title
+        return f'{self.title} by {self.author}'
 
 class Code(models.Model):
     challenge = models.ForeignKey(Challenge, related_name='codes',  on_delete=models.SET_NULL, null=True)
