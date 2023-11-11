@@ -1,51 +1,58 @@
-import datetime
-import os
-import subprocess
-import uuid
-import docker
+import jwt
 from django.db import transaction
 from django.db.models import Q
-
-from rest_framework import serializers, status
+from rest_framework import status
 from django.core.serializers import serialize
-import json
-from django.http import JsonResponse, HttpResponse
-from django.middleware.csrf import get_token
-from django.shortcuts import render
+from django.http import HttpResponse
 from django.views import View
-from django.views.decorators.csrf import requires_csrf_token
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer
+from code_lighthouse_backend.utils import retrieve_token
 
-
-# Create your views here.
 
 class Auth(APIView):
-    def get(self, request):
-        token = get_token(request)
-        data = {"aaa": "v"}
-        response = HttpResponse(data, content_type='application/json')
-        response.set_cookie('csrftoken', get_token(request))
-        return response
+
+    # def get(self, request):
+    #     token = get_token(request)
+    #     token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjk5NzI1NTE2LCJpYXQiOjE2OTk3MjUyMTYsImp0aSI6IjAyNmNkZTk1N2Q3YTQyMmVhYzViNGYzMmZiYWEzMmM3IiwidXNlcl9pZCI6M30.I8Ub4P_6GpuPWi8g8jyx6HQGMbTrR8y_FYdg4rh13NE'
+    #     print(jwt.decode(token, 'django-insecure-op_4k4#z)fnvu%8jw01#o*n*3@@8)l*s7kiogd4i400f+qakw0', algorithms=["HS256"]))
+    #     data = {"aaa": "v"}
+    #     response = HttpResponse(data, content_type='application/json')
+    #     response.set_cookie('csrftoken', get_token(request))
+    #     return response
 
     def post(self, request):
         email = request.data['email']
         password = request.data['password']
         user = AppUser.objects.filter(email=email)[0]
         if user.password == password:
+
             serialized_user = AppUserSerializer(user, context={'drill': True})
-            return Response(serialized_user.data, status=status.HTTP_200_OK)
+            refresh = RefreshToken.for_user(user)
+            user_and_token = {
+                "user": serialized_user.data,
+                'refresh': str(refresh),
+                'access': str(refresh.access_token)
+            }
+            return Response(user_and_token, status=status.HTTP_200_OK)
         else:
             return Response({'data': 'Wrong credentials!'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class RunUserCode(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request, slug):
+
+        # print(jwt.decode(token, 'django-insecure-op_4k4#z)fnvu%8jw01#o*n*3@@8)l*s7kiogd4i400f+qakw0', algorithms=["HS256"]))
+        print('asdf')
         data = request.data
         language = data['language']
 
@@ -79,6 +86,8 @@ class RunUserCode(APIView):
 
 
 class GetAssignmentSubmissionsView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, assignment_id):
         try:
             assignment = Assignment.objects.get(id=assignment_id)
@@ -103,6 +112,8 @@ class GetAssignmentSubmissionsView(APIView):
 
 
 class CommentsView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request, slug):
         try:
             data = request.data
@@ -120,6 +131,8 @@ class CommentsView(APIView):
 
 
 class RandomChallenge(View):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         challenge = Challenge.objects.order_by('?')[0]
         serialized_challenge = serialize('json', [challenge])
@@ -127,6 +140,8 @@ class RandomChallenge(View):
 
 
 class LikeView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request, slug):
         try:
             user_id = request.data['userId']
@@ -146,6 +161,8 @@ class LikeView(APIView):
 
 
 class GetChallenge(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, slug):
         try:
             challenge = Challenge.objects.filter(slug=slug)[0]
@@ -188,6 +205,8 @@ class GetChallenge(APIView):
 
 
 class GetLighthouse(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, lighthouseID):
         lighthouse = Lighthouse.objects.filter(id=lighthouseID)[0]
         print(lighthouse)
@@ -209,6 +228,8 @@ class GetLighthouse(APIView):
 
 
 class GetChallenges(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, lower_limit, upper_limit):
         challenges = Challenge.objects.all().order_by('-id')[lower_limit: upper_limit]
         serialized_challenge = ChallengeSerializer(challenges, many=True)
@@ -216,6 +237,8 @@ class GetChallenges(APIView):
 
 
 class Assignments(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request, lighthouseID):
         challenge_slug = request.data['selectedChallenge']
         due_date = request.data['dueDate']
@@ -235,6 +258,8 @@ class Assignments(APIView):
 
 
 class GetLighthouses(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, lower_limit, upper_limit):
         lighthouses = Lighthouse.objects.all()[lower_limit: upper_limit]
         serialized_lighthouses = LighthouseSerializer(lighthouses, many=True)
@@ -269,7 +294,18 @@ class PostChallenge(APIView):
 
 
 class GetUser(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, userID):
+
+
+        token = retrieve_token(request)
+
+        print(jwt.decode(token, 'django-insecure-op_4k4#z)fnvu%8jw01#o*n*3@@8)l*s7kiogd4i400f+qakw0',
+                         algorithms=["HS256"]))
+
+
+
         user = AppUser.objects.filter(id=userID)[0]
         # print(user.lighthouses.all()[0])
         serialized_user = AppUserSerializer(user, context={'drill': True})
@@ -277,6 +313,8 @@ class GetUser(APIView):
 
 
 class CreateLighthouse(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         data = request.data
         name = data['name']

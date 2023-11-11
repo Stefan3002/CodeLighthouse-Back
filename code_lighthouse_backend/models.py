@@ -5,16 +5,19 @@ from time import timezone
 from django.contrib.auth.models import User
 from django.db import models
 from django.template.defaultfilters import slugify
+from django.contrib.auth.models import AbstractUser
 
 
 # Create your models here.
 
 
 
-class AppUser(models.Model):
+class AppUser(AbstractUser):
     password = models.CharField(max_length=50, default='')
     username = models.CharField(max_length=50)
-    email = models.EmailField(default='')
+    email = models.EmailField(default='', unique=True)
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['password', 'username']
     score = models.IntegerField(max_length=10, default=0)
     user_id = models.UUIDField(default=uuid.uuid4, editable=True)
     solved_challenges = models.ManyToManyField('Challenge', null=True, blank=True)
