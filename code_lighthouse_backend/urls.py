@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
 
     path('run/<slug:slug>', views.RunUserCode.as_view()),
+    path('auth/google', views.AuthGoogle.as_view()),
     path('auth', views.Auth.as_view()),
     path('random-challenge', views.RandomChallenge.as_view()),
     path('like/<slug:slug>', views.LikeView.as_view()),
