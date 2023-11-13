@@ -1,6 +1,8 @@
+import firebase_admin
 import jwt
 from django.db import transaction
 from django.db.models import Q
+from firebase_admin import auth
 from rest_framework import status
 from django.core.serializers import serialize
 from django.http import HttpResponse
@@ -44,6 +46,46 @@ class Auth(APIView):
             return Response(user_and_token, status=status.HTTP_200_OK)
         else:
             return Response({'data': 'Wrong credentials!'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+
+import firebase_admin
+from firebase_admin import credentials
+
+
+
+cred = credentials.Certificate(r"C:\Users\Stefan\PycharmProjects\djangoProject1\code_lighthouse_backend\codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
+firebase_admin.initialize_app(cred)
+
+
+
+class AuthGoogle(APIView):
+    def post(self, request):
+
+        try:
+            # default_app = firebase_admin.initialize_app()
+            id_token = request.data['idToken']
+            email = request.data['email']
+
+
+
+            decoded_token = auth.verify_id_token(id_token)
+            uid = decoded_token['uid']
+
+            user = AppUser.objects.get(email=email)
+
+            serialized_user = AppUserSerializer(user, context={'drill': True})
+            refresh = RefreshToken.for_user(user)
+            user_and_token = {
+                "user": serialized_user.data,
+                'refresh': str(refresh),
+                'access': str(refresh.access_token)
+            }
+            return Response(user_and_token, status=status.HTTP_200_OK)
+
+
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RunUserCode(APIView):
