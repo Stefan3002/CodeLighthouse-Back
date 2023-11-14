@@ -13,6 +13,7 @@ from django.contrib.auth.models import AbstractUser
 
 
 class AppUser(AbstractUser):
+    provider = models.BooleanField(default=False)
     password = models.CharField(max_length=50, default='')
     username = models.CharField(max_length=50)
     email = models.EmailField(default='', unique=True)
