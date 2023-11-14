@@ -3,6 +3,7 @@ from rest_framework_simplejwt import views as jwt_views
 
 from code_lighthouse_backend import views
 from code_lighthouse_backend.views_dir.auth_views import auth_views
+from code_lighthouse_backend.views_dir.lighthouse_views import lighthouse_views
 
 urlpatterns = [
     path('token', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -19,8 +20,8 @@ urlpatterns = [
     path('challenges/<slug:slug>', views.GetChallenge.as_view()),
     path('challenges/<int:lower_limit>/<int:upper_limit>', views.GetChallenges.as_view()),
     path('users/<int:userID>', views.GetUser.as_view()),
-    path('lighthouses/<int:lighthouseID>', views.GetLighthouse.as_view()),
+    path('lighthouses/<int:lighthouseID>', lighthouse_views.GetLighthouse.as_view()),
     path('assignments/<int:lighthouseID>', views.Assignments.as_view()),
-    path('create-lighthouses', views.CreateLighthouse.as_view()),
-    path('lighthouses/<int:lower_limit>/<int:upper_limit>', views.GetLighthouses.as_view())
+    path('create-lighthouses', lighthouse_views.CreateLighthouse.as_view()),
+    path('lighthouses/<int:lower_limit>/<int:upper_limit>', lighthouse_views.GetLighthouses.as_view())
 ]
