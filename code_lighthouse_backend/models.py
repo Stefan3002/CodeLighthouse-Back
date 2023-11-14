@@ -14,7 +14,7 @@ from django.contrib.auth.models import AbstractUser
 
 class AppUser(AbstractUser):
     provider = models.BooleanField(default=False)
-    password = models.CharField(max_length=50, default='', blank=True)
+    password = models.CharField(max_length=130, default='', blank=True)
     username = models.CharField(max_length=50)
     email = models.EmailField(default='', unique=True)
     photoURL = models.CharField(max_length=200, default='', blank=True, null=True)
