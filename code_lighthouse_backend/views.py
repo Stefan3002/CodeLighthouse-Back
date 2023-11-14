@@ -19,34 +19,6 @@ from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSer
 from code_lighthouse_backend.utils import retrieve_token, retrieve_secret, get_request_user_id
 
 
-class Auth(APIView):
-
-    # def get(self, request):
-    #     token = get_token(request)
-    #     token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjk5NzI1NTE2LCJpYXQiOjE2OTk3MjUyMTYsImp0aSI6IjAyNmNkZTk1N2Q3YTQyMmVhYzViNGYzMmZiYWEzMmM3IiwidXNlcl9pZCI6M30.I8Ub4P_6GpuPWi8g8jyx6HQGMbTrR8y_FYdg4rh13NE'
-    #     print(jwt.decode(token, 'django-insecure-op_4k4#z)fnvu%8jw01#o*n*3@@8)l*s7kiogd4i400f+qakw0', algorithms=["HS256"]))
-    #     data = {"aaa": "v"}
-    #     response = HttpResponse(data, content_type='application/json')
-    #     response.set_cookie('csrftoken', get_token(request))
-    #     return response
-
-    def post(self, request):
-        email = request.data['email']
-        password = request.data['password']
-        user = AppUser.objects.filter(email=email)[0]
-        if user.password == password:
-
-            serialized_user = AppUserSerializer(user, context={'drill': True})
-            refresh = RefreshToken.for_user(user)
-            user_and_token = {
-                "user": serialized_user.data,
-                'refresh': str(refresh),
-                'access': str(refresh.access_token)
-            }
-            return Response(user_and_token, status=status.HTTP_200_OK)
-        else:
-            return Response({'data': 'Wrong credentials!'}, status=status.HTTP_401_UNAUTHORIZED)
-
 
 
 import firebase_admin
@@ -56,36 +28,6 @@ from firebase_admin import credentials
 
 cred = credentials.Certificate(r"C:\Users\Stefan\PycharmProjects\djangoProject1\code_lighthouse_backend\codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
 firebase_admin.initialize_app(cred)
-
-
-
-class AuthGoogle(APIView):
-    def post(self, request):
-
-        try:
-            # default_app = firebase_admin.initialize_app()
-            id_token = request.data['idToken']
-            email = request.data['email']
-
-
-
-            decoded_token = auth.verify_id_token(id_token)
-            uid = decoded_token['uid']
-
-            user = AppUser.objects.get(email=email)
-
-            serialized_user = AppUserSerializer(user, context={'drill': True})
-            refresh = RefreshToken.for_user(user)
-            user_and_token = {
-                "user": serialized_user.data,
-                'refresh': str(refresh),
-                'access': str(refresh.access_token)
-            }
-            return Response(user_and_token, status=status.HTTP_200_OK)
-
-
-        except Exception as e:
-            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RunUserCode(APIView):
