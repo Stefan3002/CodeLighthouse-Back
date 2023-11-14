@@ -25,7 +25,7 @@ class AuthProvider(APIView):
             try:
                 user = AppUser.objects.get(email=email)
             except AppUser.DoesNotExist as e:
-                user = AppUser(password='', username=username, email=email, provider=True)
+                user = AppUser(password='', username=username, email=email, provider=True, photoURL=photoURL)
                 user.save()
 
             serialized_user = AppUserSerializer(user, context={'drill': True})

@@ -14,11 +14,12 @@ from django.contrib.auth.models import AbstractUser
 
 class AppUser(AbstractUser):
     provider = models.BooleanField(default=False)
-    password = models.CharField(max_length=50, default='')
+    password = models.CharField(max_length=50, default='', blank=True)
     username = models.CharField(max_length=50)
     email = models.EmailField(default='', unique=True)
+    photoURL = models.CharField(max_length=200, default='', blank=True, null=True)
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['password', 'username']
+    REQUIRED_FIELDS = ['username']
     score = models.IntegerField(max_length=10, default=0)
     user_id = models.UUIDField(default=uuid.uuid4, editable=True)
     solved_challenges = models.ManyToManyField('Challenge', null=True, blank=True)
