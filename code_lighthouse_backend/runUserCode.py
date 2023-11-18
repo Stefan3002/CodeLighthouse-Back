@@ -36,7 +36,7 @@ def checkExitCode(exit_code, user_id, challenge, code, language):
         saveSubmission(user_id, challenge, code, language)
 
     else:
-        raise Exception('Wrong solution submitted!')
+        raise Exception('<strong><italic><h3>Wrong solution submitted!</h3></italic></strong>\n')
 
 
 def removeFilesFromSystem(container, language):
@@ -94,10 +94,15 @@ def runPythonCode(request, slug):
             client = docker.from_env()
             container = client.containers.create(**docker_config)
 
+
             os.system(f'docker cp userFile.py {container.name}:/app/vol/userFile.py')
             os.system(f'docker cp authorFile.py {container.name}:/app/vol/authorFile.py')
             os.system(f'docker cp randomFile.py {container.name}:/app/vol/randomFile.py')
+
+            # Start with that config that stops it after a number of seconds
+
             container.start()
+
             # Get the logs as a stream of bytes
             logs = container.logs(stdout=True, stderr=True, stream=True)
             log_bytes = b''
@@ -114,14 +119,14 @@ def runPythonCode(request, slug):
             exit_code = int(exit_code)
 
             checkExitCode(exit_code, user_id, challenge, code, 'Python')
-
+            # Sure to not have failed
+            return logs_str
     except Exception as e:
-        raise Exception(e)
+        raise Exception(f'{e} {logs_str}')
         # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
     finally:
         removeFilesFromSystem(container, 'Python')
 
-    return logs_str
     # return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
 
 
@@ -169,13 +174,14 @@ def runJavascriptCode(request, slug):
 
             checkExitCode(exit_code, user_id, challenge, code, 'Javascript')
 
+            # Sure to not have failed
+            return logs_str
     except Exception as e:
-        raise Exception(e)
+        raise Exception(f'{e} {logs_str}')
         # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
     finally:
         removeFilesFromSystem(container, 'Javascript')
 
-    return logs_str
 
 def runRubyCode(request, slug):
     challenge = Challenge.objects.filter(slug=slug)[0]
@@ -219,11 +225,12 @@ def runRubyCode(request, slug):
             exit_code = int(exit_code)
 
             checkExitCode(exit_code, user_id, challenge, code, 'Ruby')
+            # Sure to not have failed
+            return logs_str
 
     except Exception as e:
-        raise Exception(e)
+        raise Exception(f'{e} {logs_str}')
         # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
     finally:
         removeFilesFromSystem(container, 'Ruby')
 
-    return logs_str
