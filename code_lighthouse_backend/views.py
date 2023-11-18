@@ -162,7 +162,7 @@ class GetChallenge(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, slug):
         try:
-            challenge = Challenge.objects.filter(slug=slug)[0]
+            challenge = Challenge.objects.get(slug=slug)
             serialized_challenge = ChallengeSerializer(challenge)
             return Response(serialized_challenge.data, status=status.HTTP_200_OK)
         except Exception as e:
