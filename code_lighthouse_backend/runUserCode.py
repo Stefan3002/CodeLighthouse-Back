@@ -137,6 +137,11 @@ def runJavascriptCode(request, slug):
     tests = challenge_code.random_tests
 
     code = request.data['code']
+
+    # Add the export of the userFunction
+
+    code += '\n module.exports = userFunction'
+
     user_id = request.data['userId']
     try:
         with transaction.atomic():
