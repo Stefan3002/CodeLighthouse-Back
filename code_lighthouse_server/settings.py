@@ -35,7 +35,7 @@ SECRET_KEY = os.environ['SECRET_KEY'] # Instead of your actual secret key
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'stefan3002.pythonanywhere.com']
 
 # Application definition
 
@@ -171,6 +171,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = "/home/stefan3002/CodeLighthouse-Back/static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -181,9 +182,11 @@ CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    'https://ornate-froyo-80388f.netlify.app'
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
+    "https://ornate-froyo-80388f.netlify.app"
 ]
 CSRF_COOKIE_SECURE = False
 CORS_ALLOW_METHODS = [

@@ -7,10 +7,7 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from django.contrib.auth.models import AbstractUser
 
-
 # Create your models here.
-
-
 
 class AppUser(AbstractUser):
     provider = models.BooleanField(default=False)
@@ -71,6 +68,7 @@ class Lighthouse(models.Model):
     enrollment_code = models.UUIDField(default=uuid.uuid4, editable=True)
     author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_lighthouses', null=True, blank=True)
     people = models.ManyToManyField(AppUser, related_name='enrolled_Lighthouses')
+    public = models.BooleanField(default=False)
     # assignments = models.ManyToManyField(Challenge, related_name='featured_in', blank=True)
 
 
