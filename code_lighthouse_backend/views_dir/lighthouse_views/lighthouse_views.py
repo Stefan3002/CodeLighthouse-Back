@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from code_lighthouse_backend.models import AppUser, Lighthouse
 from code_lighthouse_backend.serializers import LighthouseSerializer
+from code_lighthouse_backend.utils import get_request_user_id
 
 
 class GetLighthouse(APIView):
@@ -15,8 +16,14 @@ class GetLighthouse(APIView):
     def get(self, request, lighthouseID):
         try:
             lighthouse = Lighthouse.objects.get(id=lighthouseID)
-            serialized_lighthouse = LighthouseSerializer(lighthouse, context={'drill': False})
-            return Response(serialized_lighthouse.data, status=status.HTTP_200_OK)
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if logged_in_user in lighthouse.people.all():
+                serialized_lighthouse = LighthouseSerializer(lighthouse, context={'drill': False})
+                return Response(serialized_lighthouse.data, status=status.HTTP_200_OK)
+            else:
+                raise Exception('This lighthouse does not recognize you. Are you enrolled here?')
         except Exception as e:
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

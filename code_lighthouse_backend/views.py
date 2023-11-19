@@ -30,6 +30,7 @@ from firebase_admin import credentials
 
 
 cred = credentials.Certificate(r"C:\Users\Stefan\PycharmProjects\djangoProject1\code_lighthouse_backend\codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
+# cred = credentials.Certificate(r"./codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
 firebase_admin.initialize_app(cred)
 
 
@@ -135,6 +136,16 @@ class RandomChallenge(View):
         serialized_challenge = serialize('json', [challenge])
         return HttpResponse(serialized_challenge, content_type='application/json')
 
+
+class Communities(APIView):
+    def get(self, request):
+        try:
+            communities = Lighthouse.objects.filter(public=True)
+            serialized_lighthouses = LighthouseSerializer(communities, many=True)
+            return Response(serialized_lighthouses.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class LikeView(APIView):
     authentication_classes = [JWTAuthentication]
