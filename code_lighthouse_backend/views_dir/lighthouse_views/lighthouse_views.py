@@ -65,12 +65,17 @@ class CreateLighthouse(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        data = request.data
-        name = data['name']
-        description = data['description']
-        user_id = data['user_id']
-        author = AppUser.objects.filter(user_id=user_id)[0]
-        new_lighthouse = Lighthouse(name=name, description=description, author=author)
-        new_lighthouse.save()
-        new_lighthouse.people.add(author)
-        return Response({}, status=status.HTTP_201_CREATED)
+        try:
+            data = request.data
+            name = data['name']
+            description = data['description']
+            user_id = data['user_id']
+            community = data['community']
+
+            author = AppUser.objects.get(user_id=user_id)
+            new_lighthouse = Lighthouse(name=name, description=description, author=author, public=community)
+            new_lighthouse.save()
+            new_lighthouse.people.add(author)
+            return Response({'OK': True, 'data': 'Created your Lighthouse!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
