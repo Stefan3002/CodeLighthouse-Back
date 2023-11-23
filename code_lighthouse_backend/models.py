@@ -17,6 +17,7 @@ class AppUser(AbstractUser):
     photoURL = models.CharField(max_length=200, default='', blank=True, null=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
+    admin_user = models.BooleanField(default=False)
     score = models.IntegerField(max_length=10, default=0)
     user_id = models.UUIDField(default=uuid.uuid4, editable=True)
     solved_challenges = models.ManyToManyField('Challenge', null=True, blank=True)
@@ -42,8 +43,10 @@ class Challenge(models.Model):
     slug = models.SlugField(default='')
     difficulty = models.IntegerField(default=-5)
     author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_challenges', null=True, blank=True)
-
+    public = models.BooleanField(default=False)
+    private = models.BooleanField(default=True)
     status = models.CharField(max_length=30, default='Reviewing')
+    denied = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)

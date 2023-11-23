@@ -21,32 +21,31 @@ from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSer
     SubmissionSerializer
 from code_lighthouse_backend.utils import retrieve_token, retrieve_secret, get_request_user_id
 
-
-
-
 import firebase_admin
 from firebase_admin import credentials
 
-
-
-cred = credentials.Certificate(r"C:\Users\Stefan\PycharmProjects\djangoProject1\code_lighthouse_backend\codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
+cred = credentials.Certificate(
+    r"C:\Users\Stefan\PycharmProjects\djangoProject1\code_lighthouse_backend\codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
 # cred = credentials.Certificate(r"./codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
 firebase_admin.initialize_app(cred)
-
 
 
 def format_logs_for_html(logs):
     html_logs = '<p>' + logs.replace('\n', '</p><p>')
     html_logs = html_logs.replace('\t', '&nbsp;&nbsp;')
     return html_logs
+
+
 def handle_code_error(e):
     error_str = format_logs_for_html(str(e))
     return Response({'OK': False, 'data': error_str}, status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content_type='text/plain')
 
+
 class RunUserCode(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def post(self, request, slug):
 
         # print(jwt.decode(token, 'django-insecure-op_4k4#z)fnvu%8jw01#o*n*3@@8)l*s7kiogd4i400f+qakw0', algorithms=["HS256"]))
@@ -86,6 +85,7 @@ class RunUserCode(APIView):
 class GetAssignmentSubmissionsView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def get(self, request, assignment_id):
         try:
             assignment = Assignment.objects.get(id=assignment_id)
@@ -112,6 +112,7 @@ class GetAssignmentSubmissionsView(APIView):
 class CommentsView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def post(self, request, slug):
         try:
             data = request.data
@@ -131,6 +132,7 @@ class CommentsView(APIView):
 class RandomChallenge(View):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def get(self, request):
         challenge = Challenge.objects.order_by('?')[0]
         serialized_challenge = serialize('json', [challenge])
@@ -147,9 +149,11 @@ class Communities(APIView):
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class LikeView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def post(self, request, slug):
         try:
             user_id = request.data['userId']
@@ -171,9 +175,26 @@ class LikeView(APIView):
 class GetChallenge(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def get(self, request, slug):
         try:
             challenge = Challenge.objects.get(slug=slug)
+
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            print(logged_in_user.assignments.filter(id=challenge.id).exists())
+            print(logged_in_user.assignments.all()[3].id)
+            print(challenge.id)
+
+            if challenge.private:
+                if challenge not in logged_in_user.authored_challenges.all():
+                    if not logged_in_user.assignments.filter(id=challenge.id).exists():
+                        return Response({"data": "This is a private challenge!"}, status=status.HTTP_403_FORBIDDEN)
+            elif not challenge.public:
+                if not logged_in_user.admin_user:
+                    return Response({"data": "This challenge has not yet passed our verification!"}, status=status.HTTP_403_FORBIDDEN)
+
             serialized_challenge = ChallengeSerializer(challenge)
             return Response(serialized_challenge.data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -215,15 +236,68 @@ class GetChallenge(APIView):
 class GetChallenges(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def get(self, request, lower_limit, upper_limit):
         challenges = Challenge.objects.all().order_by('-id')[lower_limit: upper_limit]
         serialized_challenge = ChallengeSerializer(challenges, many=True)
         return Response(serialized_challenge.data, status=status.HTTP_200_OK)
 
 
+class AdminGetChallenges(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if not logged_in_user.admin_user:
+                return Response({'data': 'Hey there now! You are not an admin!!'}, status=status.HTTP_403_FORBIDDEN)
+
+            challenges = Challenge.objects.filter(Q(public=False) & Q(private=False) & Q(denied=False))
+            return Response(ChallengeSerializer(challenges, many=True).data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ChallengeAdmin(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request, slug):
+        data = request.data
+        verdict = data['verdict']
+
+        try:
+            challenge = Challenge.objects.get(slug=slug)
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if not logged_in_user.admin_user:
+                return Response({'data': 'Hey there now! You are not an admin!!'}, status=status.HTTP_403_FORBIDDEN)
+
+            if verdict == 'approve':
+                challenge.public = True
+            elif verdict == 'send-back':
+                challenge.public = False
+                challenge.status = 'Needs improvement'
+            elif verdict == 'deny':
+                challenge.public = False
+                challenge.status = 'Denied'
+                challenge.denied = True
+
+            challenge.save()
+            return Response({'data': 'Action completed admin!'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
 class Assignments(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def post(self, request, lighthouseID):
         challenge_slug = request.data['selectedChallenge']
         due_date = request.data['dueDate']
@@ -242,8 +316,6 @@ class Assignments(APIView):
         return Response({'data': 'Success!'}, status=status.HTTP_201_CREATED)
 
 
-
-
 class PostChallenge(APIView):
     def get(self):
         pass
@@ -256,11 +328,13 @@ class PostChallenge(APIView):
         random_function = data['randomFunction']
         language = data['language']
         user_id = data['userId']
+        private = data['privateChallenge']
+
         user = AppUser.objects.get(user_id=user_id)
 
         try:
             with transaction.atomic():
-                new_challenge = Challenge(title=title, description=description, author=user)
+                new_challenge = Challenge(private=private, title=title, description=description, author=user)
                 new_challenge.save()
                 new_code = Code(challenge=new_challenge, language=language, solution=true_function,
                                 random_tests=random_function)
@@ -274,6 +348,7 @@ class PostChallenge(APIView):
 class GetUser(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def get(self, request, userID):
 
         decoded_user_id = get_request_user_id(request)
@@ -285,6 +360,3 @@ class GetUser(APIView):
             return Response(serialized_user.data, status=status.HTTP_200_OK)
         else:
             return Response({'data': 'Forbidden info!'}, status=status.HTTP_403_FORBIDDEN)
-
-
-
