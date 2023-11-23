@@ -13,6 +13,22 @@ class GetLighthouse(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    def delete(self, request, lighthouseID):
+        try:
+            lighthouse = Lighthouse.objects.get(id=lighthouseID)
+
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if logged_in_user == lighthouse.author:
+                lighthouse.archived = True
+                lighthouse.save()
+                return Response({'OK': True, 'data': 'Successfully archived!'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'OK': False, 'data': 'You are not the owner of the Lighthouse!'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def get(self, request, lighthouseID):
         try:
             lighthouse = Lighthouse.objects.get(id=lighthouseID)

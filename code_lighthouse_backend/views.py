@@ -183,13 +183,14 @@ class GetChallenge(APIView):
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
 
-            print(logged_in_user.assignments.filter(id=challenge.id).exists())
-            print(logged_in_user.assignments.all()[3].id)
-            print(challenge.id)
 
             if challenge.private:
                 if challenge not in logged_in_user.authored_challenges.all():
-                    if not logged_in_user.assignments.filter(id=challenge.id).exists():
+                    found = False
+                    for assignment in logged_in_user.assignments.all():
+                        if challenge == assignment.challenge:
+                            found = True
+                    if not found:
                         return Response({"data": "This is a private challenge!"}, status=status.HTTP_403_FORBIDDEN)
             elif not challenge.public:
                 if not logged_in_user.admin_user:
@@ -299,40 +300,48 @@ class Assignments(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, lighthouseID):
-        challenge_slug = request.data['selectedChallenge']
-        due_date = request.data['dueDate']
-        due_time = request.data['dueTime']
-        users = request.data['users']
-        lighthouse = Lighthouse.objects.filter(id=lighthouseID)[0]
-        challenge = Challenge.objects.filter(slug=challenge_slug)[0]
-        new_assignment = Assignment(due_date=due_date, due_time=due_time, challenge=challenge, lighthouse=lighthouse)
+        try:
+            challenge_slug = request.data['selectedChallenge']
+            due_date = request.data['dueDate']
+            due_time = request.data['dueTime']
+            users = request.data['users']
 
-        new_assignment.save()
+            lighthouse = Lighthouse.objects.get(id=lighthouseID)
 
-        for user_id in users:
-            user = AppUser.objects.filter(user_id=user_id)[0]
-            new_assignment.users.add(user)
+            if lighthouse.archived:
+                return Response({'data': 'This Lighthouse has been archived! It is Read - Only'}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({'data': 'Success!'}, status=status.HTTP_201_CREATED)
+            challenge = Challenge.objects.get(slug=challenge_slug)
+            new_assignment = Assignment(due_date=due_date, due_time=due_time, challenge=challenge, lighthouse=lighthouse)
 
+            new_assignment.save()
+
+            for user_id in users:
+                user = AppUser.objects.filter(user_id=user_id)[0]
+                new_assignment.users.add(user)
+
+            return Response({'data': 'Success!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class PostChallenge(APIView):
     def get(self):
         pass
 
     def post(self, request):
-        data = request.data
-        title = data['title']
-        description = data['description']
-        true_function = data['trueFunction']
-        random_function = data['randomFunction']
-        language = data['language']
-        user_id = data['userId']
-        private = data['privateChallenge']
-
-        user = AppUser.objects.get(user_id=user_id)
-
         try:
+            data = request.data
+            title = data['title']
+            description = data['description']
+            true_function = data['trueFunction']
+            random_function = data['randomFunction']
+            language = data['language']
+            user_id = data['userId']
+            private = data['privateChallenge']
+
+            user = AppUser.objects.get(user_id=user_id)
+
+
             with transaction.atomic():
                 new_challenge = Challenge(private=private, title=title, description=description, author=user)
                 new_challenge.save()
