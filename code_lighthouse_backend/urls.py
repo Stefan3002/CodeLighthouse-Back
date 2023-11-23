@@ -19,6 +19,8 @@ urlpatterns = [
     path('submissions/<int:assignment_id>', views.GetAssignmentSubmissionsView.as_view()),
     path('challenges/<slug:slug>/comments', views.CommentsView.as_view()),
     path('challenges/<slug:slug>', views.GetChallenge.as_view()),
+    path('admin', views.AdminGetChallenges.as_view()),
+    path('challenges-admin/<slug:slug>', views.ChallengeAdmin.as_view()),
     path('challenges/<int:lower_limit>/<int:upper_limit>', views.GetChallenges.as_view()),
     path('users/<int:userID>', views.GetUser.as_view()),
     path('lighthouses/<int:lighthouseID>', lighthouse_views.GetLighthouse.as_view()),
