@@ -72,6 +72,7 @@ class Lighthouse(models.Model):
     author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_lighthouses', null=True, blank=True)
     people = models.ManyToManyField(AppUser, related_name='enrolled_Lighthouses')
     public = models.BooleanField(default=False)
+    archived = models.BooleanField(default=False)
     # assignments = models.ManyToManyField(Challenge, related_name='featured_in', blank=True)
 
 
