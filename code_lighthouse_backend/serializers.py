@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment, Comment, Like, Code, Submission
+from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment, Comment, Like, Code, Submission, \
+    Reports, Announcement
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -13,6 +14,46 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_author(self, comment):
         author = comment.author
         return AppUserSerializer(author).data
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+    assigned_admin = serializers.SerializerMethodField()
+    challenge = serializers.SerializerMethodField()
+    class Meta:
+        model = Reports
+        fields = '__all__'
+
+    def get_author(self, report):
+        author = report.author
+        return AppUserSerializer(author).data
+
+    def get_assigned_admin(self, report):
+        admin = report.author
+        return AppUserSerializer(admin).data
+
+    def get_challenge(self, report):
+        challenge = report.challenge
+        return ChallengeSerializer(challenge).data
+
+
+class AnnouncementSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+    lighthouse = serializers.SerializerMethodField()
+    class Meta:
+        model = Announcement
+        fields = '__all__'
+
+    def get_author(self, announcement):
+        author = announcement.author
+        return AppUserSerializer(author).data
+
+    def get_lighthouse(self, announcement):
+        lighthouse = announcement.lighthouse
+        if self.context.get('drill'):
+            return LighthouseSerializer(lighthouse).data
+        else:
+            return {}
 
 
 class CodeSerializer(serializers.ModelSerializer):
@@ -98,7 +139,11 @@ class LighthouseSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     people = serializers.SerializerMethodField()
     assignments = serializers.SerializerMethodField()
+    announcements = serializers.SerializerMethodField()
 
+    def get_announcements(self, lighthouse):
+        announcements = lighthouse.announcements.all()
+        return AnnouncementSerializer(announcements, many=True).data
     def get_assignments(self, lighthouse):
         assignments = Assignment.objects.filter(lighthouse=lighthouse)
         return AssignmentSerializer(assignments, many=True).data
@@ -125,11 +170,19 @@ class AppUserSerializer(serializers.ModelSerializer):
     authored_challenges = serializers.SerializerMethodField()
     liked_challenges = serializers.SerializerMethodField()
     submissions = serializers.SerializerMethodField()
+    assigned_reports = serializers.SerializerMethodField()
 
     def get_submissions(self, app_user):
         submissions = app_user.submissions.all()
         if self.context.get('drill'):
             return SubmissionSerializer(submissions, many=True).data
+        else:
+            return {}
+
+    def get_assigned_reports(self, app_user):
+        reports = app_user.assigned_reports.all()
+        if self.context.get('drill'):
+            return ReportSerializer(reports, many=True).data
         else:
             return {}
 

@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
-from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code
+from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, Announcement
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer
@@ -172,128 +172,31 @@ class LikeView(APIView):
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class GetChallenge(APIView):
+class Announcements(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-
-    def get(self, request, slug):
+    def post(self, request):
         try:
-            challenge = Challenge.objects.get(slug=slug)
-
-            decoded_user_id = get_request_user_id(request)
-            logged_in_user = AppUser.objects.get(id=decoded_user_id)
-
-
-            if challenge.private:
-                if challenge not in logged_in_user.authored_challenges.all():
-                    found = False
-                    for assignment in logged_in_user.assignments.all():
-                        if challenge == assignment.challenge:
-                            found = True
-                    if not found:
-                        return Response({"data": "This is a private challenge!"}, status=status.HTTP_403_FORBIDDEN)
-            elif not challenge.public:
-                if not logged_in_user.admin_user:
-                    return Response({"data": "This challenge has not yet passed our verification!"}, status=status.HTTP_403_FORBIDDEN)
-
-            serialized_challenge = ChallengeSerializer(challenge)
-            return Response(serialized_challenge.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            print(e)
-            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    def put(self, request, slug):
-        try:
-            challenge = Challenge.objects.filter(slug=slug)[0]
             data = request.data
-            title = data['title']
-            language = data['language']
-            description = data['description']
-            true_function = data['trueFunction']
-            random_function = data['randomFunction']
+            lighthouse_id = data['lighthouseId']
+            content = data['content']
 
-            challenge.title = title
-            challenge.description = description
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+            lighthouse = Lighthouse.objects.get(id=lighthouse_id)
 
-            code = None
+            if not logged_in_user == lighthouse.author:
+                return Response({"data": 'You are not the owner of this Lighthouse!'}, status=status.HTTP_403_FORBIDDEN)
+            if len(content.strip()) < 15:
+                return Response({"data": 'Too short announcement!'}, status=status.HTTP_400_BAD_REQUEST)
 
-            try:
-                code = Code.objects.get(Q(challenge=challenge) & Q(language=language))
-                code.random_tests = random_function
-                code.solution = true_function
-            except Exception as e:
-                code = Code(challenge=challenge, solution=true_function, language=language,
-                            random_tests=random_function)
-            finally:
-                code.save()
+            new_announcement = Announcement(lighthouse=lighthouse, author=logged_in_user, content=content)
+            new_announcement.save()
 
-            challenge.save()
-            return Response({"data": 'Successfully modified!'}, status=status.HTTP_201_CREATED)
+            return Response({"data": 'Successfully created!'}, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class GetChallenges(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, lower_limit, upper_limit):
-        challenges = Challenge.objects.all().order_by('-id')[lower_limit: upper_limit]
-        serialized_challenge = ChallengeSerializer(challenges, many=True)
-        return Response(serialized_challenge.data, status=status.HTTP_200_OK)
-
-
-class AdminGetChallenges(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        try:
-            decoded_user_id = get_request_user_id(request)
-            logged_in_user = AppUser.objects.get(id=decoded_user_id)
-
-            if not logged_in_user.admin_user:
-                return Response({'data': 'Hey there now! You are not an admin!!'}, status=status.HTTP_403_FORBIDDEN)
-
-            challenges = Challenge.objects.filter(Q(public=False) & Q(private=False) & Q(denied=False))
-            return Response(ChallengeSerializer(challenges, many=True).data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class ChallengeAdmin(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-    def post(self, request, slug):
-        data = request.data
-        verdict = data['verdict']
-
-        try:
-            challenge = Challenge.objects.get(slug=slug)
-            decoded_user_id = get_request_user_id(request)
-            logged_in_user = AppUser.objects.get(id=decoded_user_id)
-
-            if not logged_in_user.admin_user:
-                return Response({'data': 'Hey there now! You are not an admin!!'}, status=status.HTTP_403_FORBIDDEN)
-
-            if verdict == 'approve':
-                challenge.public = True
-            elif verdict == 'send-back':
-                challenge.public = False
-                challenge.status = 'Needs improvement'
-            elif verdict == 'deny':
-                challenge.public = False
-                challenge.status = 'Denied'
-                challenge.denied = True
-
-            challenge.save()
-            return Response({'data': 'Action completed admin!'}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
 
 class Assignments(APIView):
     authentication_classes = [JWTAuthentication]
@@ -324,34 +227,6 @@ class Assignments(APIView):
         except Exception as e:
             return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class PostChallenge(APIView):
-    def get(self):
-        pass
-
-    def post(self, request):
-        try:
-            data = request.data
-            title = data['title']
-            description = data['description']
-            true_function = data['trueFunction']
-            random_function = data['randomFunction']
-            language = data['language']
-            user_id = data['userId']
-            private = data['privateChallenge']
-
-            user = AppUser.objects.get(user_id=user_id)
-
-
-            with transaction.atomic():
-                new_challenge = Challenge(private=private, title=title, description=description, author=user)
-                new_challenge.save()
-                new_code = Code(challenge=new_challenge, language=language, solution=true_function,
-                                random_tests=random_function)
-                new_code.save()
-        except Exception as e:
-            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return Response({'data': 'Success'}, status=status.HTTP_201_CREATED)
 
 
 class GetUser(APIView):

@@ -7,6 +7,7 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from django.contrib.auth.models import AbstractUser
 
+
 # Create your models here.
 
 class AppUser(AbstractUser):
@@ -21,6 +22,7 @@ class AppUser(AbstractUser):
     score = models.IntegerField(max_length=10, default=0)
     user_id = models.UUIDField(default=uuid.uuid4, editable=True)
     solved_challenges = models.ManyToManyField('Challenge', null=True, blank=True)
+
     def __str__(self):
         return self.username
 
@@ -32,17 +34,20 @@ class Comment(models.Model):
     content = models.TextField(max_length=1000)
     author = models.ForeignKey(AppUser, related_name='comments', on_delete=models.DO_NOTHING)
     # date = models.DateField(default=datetime.datetime.now)
-    challenge = models.ForeignKey('Challenge', on_delete=models.DO_NOTHING, related_name='comments', blank=True, null=True)
+    challenge = models.ForeignKey('Challenge', on_delete=models.DO_NOTHING, related_name='comments', blank=True,
+                                  null=True)
 
     def __str__(self):
         return f'{self.author} on {self.challenge}'
+
 
 class Challenge(models.Model):
     title = models.CharField(max_length=50)
     description = models.TextField(max_length=4000)
     slug = models.SlugField(default='')
     difficulty = models.IntegerField(default=-5)
-    author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_challenges', null=True, blank=True)
+    author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_challenges', null=True,
+                               blank=True)
     public = models.BooleanField(default=False)
     private = models.BooleanField(default=True)
     status = models.CharField(max_length=30, default='Reviewing')
@@ -55,8 +60,9 @@ class Challenge(models.Model):
     def __str__(self):
         return f'{self.title} by {self.author}'
 
+
 class Code(models.Model):
-    challenge = models.ForeignKey(Challenge, related_name='codes',  on_delete=models.SET_NULL, null=True)
+    challenge = models.ForeignKey(Challenge, related_name='codes', on_delete=models.SET_NULL, null=True)
     language = models.CharField(max_length=50)
     solution = models.TextField(max_length=4000, default='def true_function():')
     random_tests = models.TextField(max_length=4000, default='def random_function():')
@@ -69,16 +75,37 @@ class Lighthouse(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField(max_length=1000)
     enrollment_code = models.UUIDField(default=uuid.uuid4, editable=True)
-    author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_lighthouses', null=True, blank=True)
+    author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='authored_lighthouses', null=True,
+                               blank=True)
     people = models.ManyToManyField(AppUser, related_name='enrolled_Lighthouses')
     public = models.BooleanField(default=False)
     archived = models.BooleanField(default=False)
-    # assignments = models.ManyToManyField(Challenge, related_name='featured_in', blank=True)
 
+    # assignments = models.ManyToManyField(Challenge, related_name='featured_in', blank=True)
 
     def __str__(self):
         return f'{self.name} by {self.author.username}'
 
+
+class Reports(models.Model):
+    reason = models.CharField(max_length=30)
+    comment = models.TextField(max_length=1000, null=True)
+    author = models.ForeignKey(AppUser, related_name='assigned_reports', on_delete=models.DO_NOTHING)
+    assigned_admin = models.ForeignKey(AppUser, related_name='reports_admined', on_delete=models.DO_NOTHING)
+    closed = models.BooleanField(default=False)
+    challenge = models.ForeignKey(Challenge, related_name='reports_featured_in', on_delete=models.DO_NOTHING, null=True)
+
+    def __str__(self):
+        return f'{self.reason} by {self.author} on {self.challenge} assigned to {self.assigned_admin}'
+
+class Announcement(models.Model):
+    author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING)
+    content = models.TextField(max_length=2000)
+    date = models.DateField(default=datetime.datetime.now())
+    lighthouse = models.ForeignKey(Lighthouse, related_name='announcements' , on_delete=models.DO_NOTHING, null=True)
+
+    def __str__(self):
+        return f'{self.lighthouse} on {self.date}'
 
 class Assignment(models.Model):
     due_date = models.DateField()
