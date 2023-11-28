@@ -142,7 +142,7 @@ class LighthouseSerializer(serializers.ModelSerializer):
     announcements = serializers.SerializerMethodField()
 
     def get_announcements(self, lighthouse):
-        announcements = lighthouse.announcements.all()
+        announcements = lighthouse.announcements.all().order_by('id').reverse()
         return AnnouncementSerializer(announcements, many=True).data
     def get_assignments(self, lighthouse):
         assignments = Assignment.objects.filter(lighthouse=lighthouse)
