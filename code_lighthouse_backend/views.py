@@ -15,6 +15,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from code_lighthouse_backend.email_sending.messages import new_announcement_message, format_new_announcement_email
+from code_lighthouse_backend.email_sending.send_emails import send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, Announcement
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
@@ -192,6 +195,12 @@ class Announcements(APIView):
 
             new_announcement = Announcement(lighthouse=lighthouse, author=logged_in_user, content=content)
             new_announcement.save()
+
+            # Send E-mails.
+            for receiver in lighthouse.people.all():
+                print(receiver.email)
+                format_new_announcement_email(receiver.username, lighthouse.name, content)
+                send_email(receiver_email=receiver.email, message=new_announcement_message)
 
             return Response({"data": 'Successfully created!'}, status=status.HTTP_201_CREATED)
         except Exception as e:
