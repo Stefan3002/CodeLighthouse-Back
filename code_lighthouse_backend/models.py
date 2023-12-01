@@ -52,6 +52,8 @@ class Challenge(models.Model):
     private = models.BooleanField(default=True)
     status = models.CharField(max_length=30, default='Reviewing')
     denied = models.BooleanField(default=False)
+    attempts = models.IntegerField(max_length=100, default=0)
+    solved = models.IntegerField(max_length=100, default=0)
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)

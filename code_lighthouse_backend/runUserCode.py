@@ -26,15 +26,20 @@ def saveSubmission(user_id, challenge, code, language):
     new_submission = Submission(user=user, challenge=challenge, code=code, language=language)
     new_submission.save()
 def checkExitCode(exit_code, user_id, challenge, code, language):
+    user = AppUser.objects.get(user_id=user_id)
+    if challenge not in user.solved_challenges.all():
+        challenge.attempts += 1
+        challenge.save()
+
     if exit_code == 0:
-        user = AppUser.objects.get(user_id=user_id)
-        user.solved_challenges.add(challenge)
         if challenge not in user.solved_challenges.all():
             user.score += SCORES[challenge.difficulty]
-        user.save()
-
-        saveSubmission(user_id, challenge, code, language)
-
+            challenge.solved += 1
+            challenge.save()
+        user.solved_challenges.add(challenge)
+        with transaction.atomic():
+            user.save()
+            saveSubmission(user_id, challenge, code, language)
     else:
         raise Exception('<strong><italic><h3>Wrong solution submitted!</h3></italic></strong>\n')
 
@@ -72,6 +77,36 @@ def removeFilesFromSystem(container, language):
     container.stop()
     container.remove()
 
+
+def verify_functions(true_f, user, random, language):
+
+    case = ''
+
+    if language == 'Python':
+        case = 'Camel'
+    elif language == 'Javascript':
+        case = 'Camel'
+    elif language == 'Ruby':
+        case = 'Snake'
+
+    if case == 'Snake':
+        user_function_name = f'user_function'
+
+    elif case == 'Camel':
+        user_function_name = f'userFunction'
+
+
+    if len(user) <= 1:
+        raise Exception(f'<p>You did <b>not</b> provide a function called: {user_function_name}</p>')
+
+    if len(random) <= 1:
+        raise Exception(f'<p>The author did <b>not</b> provide a random function.</p>')
+
+    if len(true_f) <= 1:
+        raise Exception(f'<p>The author did <b>not</b> provide a true function.</p>')
+
+    return True
+
 def runPythonCode(request, slug):
     challenge = Challenge.objects.filter(slug=slug)[0]
     challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Python'))
@@ -80,47 +115,49 @@ def runPythonCode(request, slug):
     code = request.data['code']
     user_id = request.data['userId']
     try:
-        with transaction.atomic():
-            # Create the file with the user's code
-            with open('userFile.py', 'w') as file:
-                file.write(code)
-            # Create the file with the author's correct code
-            with open('authorFile.py', 'w') as file2:
-                file2.write(true_solution)
-            # Create the file with the author's test cases
-            with open('randomFile.py', 'w') as file3:
-                file3.write(tests)
 
-            client = docker.from_env()
-            container = client.containers.create(**docker_config)
+        verify_functions(true_solution, code, tests, 'python')
+
+        # Create the file with the user's code
+        with open('userFile.py', 'w') as file:
+            file.write(code)
+        # Create the file with the author's correct code
+        with open('authorFile.py', 'w') as file2:
+            file2.write(true_solution)
+        # Create the file with the author's test cases
+        with open('randomFile.py', 'w') as file3:
+            file3.write(tests)
+
+        client = docker.from_env()
+        container = client.containers.create(**docker_config)
 
 
-            os.system(f'docker cp userFile.py {container.name}:/app/vol/userFile.py')
-            os.system(f'docker cp authorFile.py {container.name}:/app/vol/authorFile.py')
-            os.system(f'docker cp randomFile.py {container.name}:/app/vol/randomFile.py')
+        os.system(f'docker cp userFile.py {container.name}:/app/vol/userFile.py')
+        os.system(f'docker cp authorFile.py {container.name}:/app/vol/authorFile.py')
+        os.system(f'docker cp randomFile.py {container.name}:/app/vol/randomFile.py')
 
-            # Start with that config that stops it after a number of seconds
+        # Start with that config that stops it after a number of seconds
 
-            container.start()
+        container.start()
 
-            # Get the logs as a stream of bytes
-            logs = container.logs(stdout=True, stderr=True, stream=True)
-            log_bytes = b''
-            # Accumulate the bytes
-            for line in logs:
-                log_bytes += line
-            # Decode the bytes into str
-            logs_str = log_bytes.decode('utf-8')
-            print(logs_str)
+        # Get the logs as a stream of bytes
+        logs = container.logs(stdout=True, stderr=True, stream=True)
+        log_bytes = b''
+        # Accumulate the bytes
+        for line in logs:
+            log_bytes += line
+        # Decode the bytes into str
+        logs_str = log_bytes.decode('utf-8')
+        print(logs_str)
 
-            exit_code = subprocess.check_output(["docker", "wait", container.name])
+        exit_code = subprocess.check_output(["docker", "wait", container.name])
 
-            exit_code = exit_code.decode("utf-8").strip()
-            exit_code = int(exit_code)
+        exit_code = exit_code.decode("utf-8").strip()
+        exit_code = int(exit_code)
 
-            checkExitCode(exit_code, user_id, challenge, code, 'Python')
-            # Sure to not have failed
-            return logs_str
+        checkExitCode(exit_code, user_id, challenge, code, 'Python')
+        # Sure to not have failed
+        return logs_str
     except Exception as e:
         raise Exception(f'{e} {logs_str}')
         # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
