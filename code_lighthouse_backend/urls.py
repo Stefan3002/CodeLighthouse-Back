@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
 
     path('run/<slug:slug>', views.RunUserCode.as_view()),
+    path('run-hard/<slug:slug>', views.RunUserHardCode.as_view()),
     path('auth/provider', auth_views.AuthProvider.as_view()),
     path('auth', auth_views.Auth.as_view()),
     path('random-challenge', views.RandomChallenge.as_view()),

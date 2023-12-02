@@ -68,6 +68,7 @@ class Code(models.Model):
     language = models.CharField(max_length=50)
     solution = models.TextField(max_length=4000, default='def true_function():')
     random_tests = models.TextField(max_length=4000, default='def random_function():')
+    hard_tests = models.TextField(max_length=4000, default='def hard_function():')
 
     def __str__(self):
         return f'{self.challenge}, {self.language}'

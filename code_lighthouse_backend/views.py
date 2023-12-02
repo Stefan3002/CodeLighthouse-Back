@@ -58,7 +58,7 @@ class RunUserCode(APIView):
 
         if language == 'Python':
             try:
-                logs_str = runPythonCode(request, slug)
+                logs_str = runPythonCode(request, slug, mode='full')
                 # Success!
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
@@ -68,7 +68,7 @@ class RunUserCode(APIView):
 
         elif language == 'Javascript':
             try:
-                logs_str = runJavascriptCode(request, slug)
+                logs_str = runJavascriptCode(request, slug, mode='full')
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
                 return handle_code_error(e)
@@ -77,7 +77,48 @@ class RunUserCode(APIView):
 
         elif language == 'Ruby':
             try:
-                logs_str = runRubyCode(request, slug)
+                logs_str = runRubyCode(request, slug, mode='full')
+                logs_str = format_logs_for_html(logs_str)
+            except Exception as e:
+                return handle_code_error(e)
+
+            return Response({'data': logs_str}, status=status.HTTP_200_OK)
+
+
+
+class RunUserHardCode(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug):
+
+        # print(jwt.decode(token, 'django-insecure-op_4k4#z)fnvu%8jw01#o*n*3@@8)l*s7kiogd4i400f+qakw0', algorithms=["HS256"]))
+
+        data = request.data
+        language = data['language']
+
+        if language == 'Python':
+            try:
+                logs_str = runPythonCode(request, slug, mode='hard')
+                # Success!
+                logs_str = format_logs_for_html(logs_str)
+            except Exception as e:
+                return handle_code_error(e)
+
+            return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK, content_type='text/plain')
+
+        elif language == 'Javascript':
+            try:
+                logs_str = runJavascriptCode(request, slug, mode='hard')
+                logs_str = format_logs_for_html(logs_str)
+            except Exception as e:
+                return handle_code_error(e)
+
+            return Response({'data': logs_str}, status=status.HTTP_200_OK)
+
+        elif language == 'Ruby':
+            try:
+                logs_str = runRubyCode(request, slug, mode='hard')
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
                 return handle_code_error(e)
