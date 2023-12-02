@@ -13,6 +13,21 @@ docker_config = {
     }
 }
 
+docker_config_python_hard = {
+    'detach': True,
+    # 'command': 'sleep infinity',
+    'image': 'python_cl_img_hard',
+    # 'remove': False,
+    'tty': True,
+    # 'name': 'C1',
+    'volumes': {
+        '/volum': {
+            'bind': '/app/vol',
+            'mode': 'rw'
+        }
+    }
+}
+
 docker_config_js = {
     'detach': True,
     # 'command': 'sleep infinity',

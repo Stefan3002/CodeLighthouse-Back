@@ -5,7 +5,8 @@ import docker
 from django.db import transaction
 from django.db.models import Q
 
-from code_lighthouse_backend.dockerConfigurations import docker_config, docker_config_js, docker_config_ruby
+from code_lighthouse_backend.dockerConfigurations import docker_config, docker_config_js, docker_config_ruby, \
+    docker_config_python_hard
 from code_lighthouse_backend.models import Challenge, AppUser, Code, Submission
 
 SCORES = {
@@ -25,21 +26,23 @@ def saveSubmission(user_id, challenge, code, language):
     user = AppUser.objects.get(user_id=user_id)
     new_submission = Submission(user=user, challenge=challenge, code=code, language=language)
     new_submission.save()
-def checkExitCode(exit_code, user_id, challenge, code, language):
+def checkExitCode(exit_code, user_id, challenge, code, language, mode):
     user = AppUser.objects.get(user_id=user_id)
-    if challenge not in user.solved_challenges.all():
+    if mode != 'hard' and challenge not in user.solved_challenges.all():
         challenge.attempts += 1
         challenge.save()
 
     if exit_code == 0:
-        if challenge not in user.solved_challenges.all():
+        if mode != 'hard' and challenge not in user.solved_challenges.all():
             user.score += SCORES[challenge.difficulty]
             challenge.solved += 1
             challenge.save()
-        user.solved_challenges.add(challenge)
+        if mode != 'hard':
+            user.solved_challenges.add(challenge)
         with transaction.atomic():
             user.save()
-            saveSubmission(user_id, challenge, code, language)
+            if mode != 'hard':
+                saveSubmission(user_id, challenge, code, language)
     else:
         raise Exception('<strong><italic><h3>Wrong solution submitted!</h3></italic></strong>\n')
 
@@ -66,14 +69,17 @@ def removeFilesFromSystem(container, language):
         user_file = f'user_file{extension}'
         author_file = f'author_file{extension}'
         random_file = f'random_file{extension}'
+        hard_file = f'hard_file{extension}'
     elif case == 'Camel':
         user_file = f'userFile{extension}'
         author_file = f'authorFile{extension}'
         random_file = f'randomFile{extension}'
+        hard_file = f'hardFile{extension}'
 
     os.remove(user_file)
     os.remove(author_file)
     os.remove(random_file)
+    os.remove(hard_file)
     container.stop()
     container.remove()
 
@@ -107,11 +113,12 @@ def verify_functions(true_f, user, random, language):
 
     return True
 
-def runPythonCode(request, slug):
+def runPythonCode(request, slug, mode):
     challenge = Challenge.objects.filter(slug=slug)[0]
     challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Python'))
     true_solution = challenge_code.solution
     tests = challenge_code.random_tests
+    hard_tests = challenge_code.hard_tests
     code = request.data['code']
     user_id = request.data['userId']
     try:
@@ -127,14 +134,22 @@ def runPythonCode(request, slug):
         # Create the file with the author's test cases
         with open('randomFile.py', 'w') as file3:
             file3.write(tests)
+        # Create the file with the author's test cases
+        with open('hardFile.py', 'w') as file4:
+            file4.write(hard_tests)
+
 
         client = docker.from_env()
-        container = client.containers.create(**docker_config)
+        if mode == 'hard':
+            container = client.containers.create(**docker_config_python_hard)
+        else:
+            container = client.containers.create(**docker_config)
 
 
         os.system(f'docker cp userFile.py {container.name}:/app/vol/userFile.py')
         os.system(f'docker cp authorFile.py {container.name}:/app/vol/authorFile.py')
         os.system(f'docker cp randomFile.py {container.name}:/app/vol/randomFile.py')
+        os.system(f'docker cp hardFile.py {container.name}:/app/vol/hardFile.py')
 
         # Start with that config that stops it after a number of seconds
 
@@ -155,7 +170,7 @@ def runPythonCode(request, slug):
         exit_code = exit_code.decode("utf-8").strip()
         exit_code = int(exit_code)
 
-        checkExitCode(exit_code, user_id, challenge, code, 'Python')
+        checkExitCode(exit_code, user_id, challenge, code, 'Python', mode)
         # Sure to not have failed
         return logs_str
     except Exception as e:
@@ -167,10 +182,11 @@ def runPythonCode(request, slug):
     # return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
 
 
-def runJavascriptCode(request, slug):
+def runJavascriptCode(request, slug, mode):
     challenge = Challenge.objects.filter(slug=slug)[0]
     challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Javascript'))
     true_solution = challenge_code.solution
+    hard_tests = challenge_code.hard_tests
     tests = challenge_code.random_tests
 
     code = request.data['code']
@@ -191,6 +207,9 @@ def runJavascriptCode(request, slug):
             # Create the file with the author's test cases
             with open('randomFile.js', 'w') as file3:
                 file3.write(tests)
+            # Create the file with the author's test cases
+            with open('hardFile.js', 'w') as file4:
+                file4.write(hard_tests)
 
             client = docker.from_env()
             container = client.containers.create(**docker_config_js)
@@ -198,6 +217,7 @@ def runJavascriptCode(request, slug):
             os.system(f'docker cp userFile.js {container.name}:/app/vol/userFile.js')
             os.system(f'docker cp authorFile.js {container.name}:/app/vol/authorFile.js')
             os.system(f'docker cp randomFile.js {container.name}:/app/vol/randomFile.js')
+            os.system(f'docker cp hardFile.js {container.name}:/app/vol/hardFile.js')
             container.start()
             # Get the logs as a stream of bytes
             logs = container.logs(stdout=True, stderr=True, stream=True)
@@ -225,11 +245,12 @@ def runJavascriptCode(request, slug):
         removeFilesFromSystem(container, 'Javascript')
 
 
-def runRubyCode(request, slug):
+def runRubyCode(request, slug, mode):
     challenge = Challenge.objects.filter(slug=slug)[0]
     challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Ruby'))
     true_solution = challenge_code.solution
     tests = challenge_code.random_tests
+    hard_tests = challenge_code.hard_tests
     code = request.data['code']
     user_id = request.data['userId']
     try:
@@ -243,6 +264,9 @@ def runRubyCode(request, slug):
             # Create the file with the author's test cases
             with open('random_file.rb', 'w') as file3:
                 file3.write(tests)
+            # Create the file with the author's hard test cases
+            with open('hard_file.rb', 'w') as file4:
+                file4.write(hard_tests)
 
             client = docker.from_env()
             container = client.containers.create(**docker_config_ruby)
@@ -250,6 +274,8 @@ def runRubyCode(request, slug):
             os.system(f'docker cp user_file.rb {container.name}:/app/vol/user_file.rb')
             os.system(f'docker cp author_file.rb {container.name}:/app/vol/author_file.rb')
             os.system(f'docker cp random_file.rb {container.name}:/app/vol/random_file.rb')
+            os.system(f'docker cp hard_file.rb {container.name}:/app/vol/hard_file.rb')
+
             container.start()
             # Get the logs as a stream of bytes
             logs = container.logs(stdout=True, stderr=True, stream=True)
