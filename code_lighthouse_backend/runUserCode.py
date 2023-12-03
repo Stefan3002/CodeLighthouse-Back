@@ -6,7 +6,7 @@ from django.db import transaction
 from django.db.models import Q
 
 from code_lighthouse_backend.dockerConfigurations import docker_config, docker_config_js, docker_config_ruby, \
-    docker_config_python_hard
+    docker_config_python_hard, docker_config_ruby_hard, docker_config_js_hard
 from code_lighthouse_backend.models import Challenge, AppUser, Code, Submission
 
 SCORES = {
@@ -22,10 +22,13 @@ SCORES = {
     5: 10000
 }
 
+
 def saveSubmission(user_id, challenge, code, language):
     user = AppUser.objects.get(user_id=user_id)
     new_submission = Submission(user=user, challenge=challenge, code=code, language=language)
     new_submission.save()
+
+
 def checkExitCode(exit_code, user_id, challenge, code, language, mode):
     user = AppUser.objects.get(user_id=user_id)
     if mode != 'hard' and challenge not in user.solved_challenges.all():
@@ -51,6 +54,7 @@ def removeFilesFromSystem(container, language):
     user_file = ''
     author_file = ''
     random_file = ''
+    hard_file = ''
 
     extension = ''
     case = ''
@@ -85,7 +89,6 @@ def removeFilesFromSystem(container, language):
 
 
 def verify_functions(true_f, user, random, language):
-
     case = ''
 
     if language == 'Python':
@@ -101,7 +104,6 @@ def verify_functions(true_f, user, random, language):
     elif case == 'Camel':
         user_function_name = f'userFunction'
 
-
     if len(user) <= 1:
         raise Exception(f'<p>You did <b>not</b> provide a function called: {user_function_name}</p>')
 
@@ -113,7 +115,8 @@ def verify_functions(true_f, user, random, language):
 
     return True
 
-def runPythonCode(request, slug, mode):
+
+def runPythonCode(request, slug, mode, custom_hard_tests):
     challenge = Challenge.objects.filter(slug=slug)[0]
     challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Python'))
     true_solution = challenge_code.solution
@@ -134,17 +137,18 @@ def runPythonCode(request, slug, mode):
         # Create the file with the author's test cases
         with open('randomFile.py', 'w') as file3:
             file3.write(tests)
-        # Create the file with the author's test cases
+        # Create the file with the author's hard test cases
         with open('hardFile.py', 'w') as file4:
-            file4.write(hard_tests)
-
+            if mode == 'hard':
+                file4.write(custom_hard_tests)
+            else:
+                file4.write(hard_tests)
 
         client = docker.from_env()
         if mode == 'hard':
             container = client.containers.create(**docker_config_python_hard)
         else:
             container = client.containers.create(**docker_config)
-
 
         os.system(f'docker cp userFile.py {container.name}:/app/vol/userFile.py')
         os.system(f'docker cp authorFile.py {container.name}:/app/vol/authorFile.py')
@@ -182,7 +186,7 @@ def runPythonCode(request, slug, mode):
     # return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
 
 
-def runJavascriptCode(request, slug, mode):
+def runJavascriptCode(request, slug, mode, custom_hard_tests):
     challenge = Challenge.objects.filter(slug=slug)[0]
     challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Javascript'))
     true_solution = challenge_code.solution
@@ -209,10 +213,17 @@ def runJavascriptCode(request, slug, mode):
                 file3.write(tests)
             # Create the file with the author's test cases
             with open('hardFile.js', 'w') as file4:
-                file4.write(hard_tests)
+                if mode == 'hard':
+                    file4.write(custom_hard_tests)
+                else:
+                    file4.write(hard_tests)
+
 
             client = docker.from_env()
-            container = client.containers.create(**docker_config_js)
+            if mode == 'hard':
+                container = client.containers.create(**docker_config_js_hard)
+            else:
+                container = client.containers.create(**docker_config_js)
 
             os.system(f'docker cp userFile.js {container.name}:/app/vol/userFile.js')
             os.system(f'docker cp authorFile.js {container.name}:/app/vol/authorFile.js')
@@ -245,7 +256,7 @@ def runJavascriptCode(request, slug, mode):
         removeFilesFromSystem(container, 'Javascript')
 
 
-def runRubyCode(request, slug, mode):
+def runRubyCode(request, slug, mode, custom_hard_tests):
     challenge = Challenge.objects.filter(slug=slug)[0]
     challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Ruby'))
     true_solution = challenge_code.solution
@@ -266,10 +277,16 @@ def runRubyCode(request, slug, mode):
                 file3.write(tests)
             # Create the file with the author's hard test cases
             with open('hard_file.rb', 'w') as file4:
-                file4.write(hard_tests)
+                if mode == 'hard':
+                    file4.write(custom_hard_tests)
+                else:
+                    file4.write(hard_tests)
 
             client = docker.from_env()
-            container = client.containers.create(**docker_config_ruby)
+            if mode == 'hard':
+                container = client.containers.create(**docker_config_ruby_hard)
+            else:
+                container = client.containers.create(**docker_config_ruby)
 
             os.system(f'docker cp user_file.rb {container.name}:/app/vol/user_file.rb')
             os.system(f'docker cp author_file.rb {container.name}:/app/vol/author_file.rb')
@@ -301,4 +318,3 @@ def runRubyCode(request, slug, mode):
         # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
     finally:
         removeFilesFromSystem(container, 'Ruby')
-

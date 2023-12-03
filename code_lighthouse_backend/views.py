@@ -58,7 +58,7 @@ class RunUserCode(APIView):
 
         if language == 'Python':
             try:
-                logs_str = runPythonCode(request, slug, mode='full')
+                logs_str = runPythonCode(request, slug, 'full', '')
                 # Success!
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
@@ -68,7 +68,7 @@ class RunUserCode(APIView):
 
         elif language == 'Javascript':
             try:
-                logs_str = runJavascriptCode(request, slug, mode='full')
+                logs_str = runJavascriptCode(request, slug, 'full', '')
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
                 return handle_code_error(e)
@@ -77,7 +77,7 @@ class RunUserCode(APIView):
 
         elif language == 'Ruby':
             try:
-                logs_str = runRubyCode(request, slug, mode='full')
+                logs_str = runRubyCode(request, slug, 'full', '')
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
                 return handle_code_error(e)
@@ -97,9 +97,11 @@ class RunUserHardCode(APIView):
         data = request.data
         language = data['language']
 
+        custom_hard_tests = data['hardTests']
+
         if language == 'Python':
             try:
-                logs_str = runPythonCode(request, slug, mode='hard')
+                logs_str = runPythonCode(request, slug, 'hard', custom_hard_tests)
                 # Success!
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
@@ -109,7 +111,7 @@ class RunUserHardCode(APIView):
 
         elif language == 'Javascript':
             try:
-                logs_str = runJavascriptCode(request, slug, mode='hard')
+                logs_str = runJavascriptCode(request, slug, 'hard', custom_hard_tests)
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
                 return handle_code_error(e)
@@ -118,7 +120,7 @@ class RunUserHardCode(APIView):
 
         elif language == 'Ruby':
             try:
-                logs_str = runRubyCode(request, slug, mode='hard')
+                logs_str = runRubyCode(request, slug, 'hard', custom_hard_tests)
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
                 return handle_code_error(e)
