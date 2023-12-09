@@ -1,5 +1,8 @@
+import datetime
 import os
 import subprocess
+import time
+import dateparser
 
 import docker
 from django.db import transaction
@@ -23,13 +26,27 @@ SCORES = {
 }
 
 
-def saveSubmission(user_id, challenge, code, language):
+def compute_exec_time(container):
+    start_time = subprocess.check_output("docker inspect --format='{{.State.StartedAt}}' " + container.name)
+    finish_time = subprocess.check_output("docker inspect --format='{{.State.FinishedAt}}' " + container.name)
+
+    start_time = start_time.decode("utf-8").strip()
+    finish_time = finish_time.decode("utf-8").strip()
+
+    start_time = dateparser.parse(start_time).timestamp()
+    finish_time = dateparser.parse(finish_time).timestamp()
+
+    exec_time = finish_time - start_time
+    return exec_time
+
+
+def saveSubmission(user_id, challenge, code, language, exec_time):
     user = AppUser.objects.get(user_id=user_id)
-    new_submission = Submission(user=user, challenge=challenge, code=code, language=language)
+    new_submission = Submission(user=user, challenge=challenge, code=code, language=language, exec_time=exec_time)
     new_submission.save()
 
 
-def checkExitCode(exit_code, user_id, challenge, code, language, mode):
+def checkExitCode(exit_code, user_id, challenge, code, language, mode, exec_time):
     user = AppUser.objects.get(user_id=user_id)
     if mode != 'hard' and challenge not in user.solved_challenges.all():
         challenge.attempts += 1
@@ -45,7 +62,7 @@ def checkExitCode(exit_code, user_id, challenge, code, language, mode):
         with transaction.atomic():
             user.save()
             if mode != 'hard':
-                saveSubmission(user_id, challenge, code, language)
+                saveSubmission(user_id, challenge, code, language, exec_time)
     else:
         raise Exception('<strong><italic><h3>Wrong solution submitted!</h3></italic></strong>\n')
 
@@ -159,6 +176,10 @@ def runPythonCode(request, slug, mode, custom_hard_tests):
 
         container.start()
 
+        # Get the exec. time of the container.
+
+        exec_time = compute_exec_time(container)
+
         # Get the logs as a stream of bytes
         logs = container.logs(stdout=True, stderr=True, stream=True)
         log_bytes = b''
@@ -174,9 +195,10 @@ def runPythonCode(request, slug, mode, custom_hard_tests):
         exit_code = exit_code.decode("utf-8").strip()
         exit_code = int(exit_code)
 
-        checkExitCode(exit_code, user_id, challenge, code, 'Python', mode)
+        checkExitCode(exit_code, user_id, challenge, code, 'Python', mode, exec_time)
         # Sure to not have failed
-        return logs_str
+
+        return logs_str, exec_time
     except Exception as e:
         raise Exception(f'{e} {logs_str}')
         # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
@@ -217,7 +239,6 @@ def runJavascriptCode(request, slug, mode, custom_hard_tests):
                     file4.write(custom_hard_tests)
                 else:
                     file4.write(hard_tests)
-
 
             client = docker.from_env()
             if mode == 'hard':
