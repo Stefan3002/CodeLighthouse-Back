@@ -8,8 +8,8 @@ from code_lighthouse_backend.views_dir.challenges_views import challenges_views
 from code_lighthouse_backend.views_dir.reports_views import reports_views
 
 urlpatterns = [
-    path('token', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
+    # path('token', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    # path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
 
     path('run/<slug:slug>', views.RunUserCode.as_view()),
     path('run-hard/<slug:slug>', views.RunUserHardCode.as_view()),

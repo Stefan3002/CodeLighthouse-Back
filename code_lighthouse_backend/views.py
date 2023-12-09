@@ -58,13 +58,15 @@ class RunUserCode(APIView):
 
         if language == 'Python':
             try:
-                logs_str = runPythonCode(request, slug, 'full', '')
+                results = runPythonCode(request, slug, 'full', '')
+                logs_str = results[0]
+                exec_time = results[1]
                 # Success!
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
                 return handle_code_error(e)
 
-            return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK, content_type='text/plain')
+            return Response({'OK': True, 'data': {'logs': logs_str, 'time': exec_time}}, status=status.HTTP_200_OK, content_type='text/plain')
 
         elif language == 'Javascript':
             try:
@@ -101,13 +103,15 @@ class RunUserHardCode(APIView):
 
         if language == 'Python':
             try:
-                logs_str = runPythonCode(request, slug, 'hard', custom_hard_tests)
+                results = runPythonCode(request, slug, 'hard', custom_hard_tests)
+                logs_str = results[0]
+                exec_time = results[1]
                 # Success!
                 logs_str = format_logs_for_html(logs_str)
             except Exception as e:
                 return handle_code_error(e)
 
-            return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK, content_type='text/plain')
+            return Response({'OK': True, 'data': {'logs': logs_str, 'time': exec_time}}, status=status.HTTP_200_OK, content_type='text/plain')
 
         elif language == 'Javascript':
             try:

@@ -134,6 +134,7 @@ class Submission(models.Model):
     time = models.TimeField(default=datetime.datetime.now())
     code = models.TextField(max_length=4000, blank=True)
     language = models.CharField(max_length=50, default='Python')
+    exec_time = models.FloatField(default=0.0)
 
     def __str__(self):
         return f'{self.user} on {self.challenge} on {self.date} - {self.time}'
