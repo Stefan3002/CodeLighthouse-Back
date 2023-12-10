@@ -2,6 +2,8 @@ import datetime
 import os
 import subprocess
 import time
+import uuid
+
 import dateparser
 
 import docker
@@ -37,6 +39,7 @@ def compute_exec_time(container):
     finish_time = dateparser.parse(finish_time).timestamp()
 
     exec_time = finish_time - start_time
+    print(exec_time)
     return exec_time
 
 
@@ -67,7 +70,7 @@ def checkExitCode(exit_code, user_id, challenge, code, language, mode, exec_time
         raise Exception('<strong><italic><h3>Wrong solution submitted!</h3></italic></strong>\n')
 
 
-def removeFilesFromSystem(container, language):
+def removeFilesFromSystem(container, language, file_id):
     user_file = ''
     author_file = ''
     random_file = ''
@@ -87,15 +90,15 @@ def removeFilesFromSystem(container, language):
         case = 'Snake'
 
     if case == 'Snake':
-        user_file = f'user_file{extension}'
-        author_file = f'author_file{extension}'
-        random_file = f'random_file{extension}'
+        user_file = f'user_file-{file_id}{extension}'
+        author_file = f'author_file-{file_id}{extension}'
+        random_file = f'random_file-{file_id}{extension}'
         hard_file = f'hard_file{extension}'
     elif case == 'Camel':
-        user_file = f'userFile{extension}'
-        author_file = f'authorFile{extension}'
-        random_file = f'randomFile{extension}'
-        hard_file = f'hardFile{extension}'
+        user_file = f'userFile-{file_id}{extension}'
+        author_file = f'authorFile-{file_id}{extension}'
+        random_file = f'randomFile-{file_id}{extension}'
+        hard_file = f'hardFile-{file_id}{extension}'
 
     os.remove(user_file)
     os.remove(author_file)
@@ -133,6 +136,24 @@ def verify_functions(true_f, user, random, language):
     return True
 
 
+
+def create_files(code, true_solution, tests, custom_hard_tests, hard_tests, mode, file_id):
+    # Create the file with the user's code
+    with open(f'userFile-{file_id}.py', 'w') as file:
+        file.write(code)
+    # Create the file with the author's correct code
+    with open(f'authorFile-{file_id}.py', 'w') as file2:
+        file2.write(true_solution)
+    # Create the file with the author's test cases
+    with open(f'randomFile-{file_id}.py', 'w') as file3:
+        file3.write(tests)
+    # Create the file with the author's hard test cases
+    with open(f'hardFile-{file_id}.py', 'w') as file4:
+        if mode == 'hard':
+            file4.write(custom_hard_tests)
+        else:
+            file4.write(hard_tests)
+
 def runPythonCode(request, slug, mode, custom_hard_tests):
     challenge = Challenge.objects.filter(slug=slug)[0]
     challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Python'))
@@ -145,21 +166,9 @@ def runPythonCode(request, slug, mode, custom_hard_tests):
 
         verify_functions(true_solution, code, tests, 'python')
 
-        # Create the file with the user's code
-        with open('userFile.py', 'w') as file:
-            file.write(code)
-        # Create the file with the author's correct code
-        with open('authorFile.py', 'w') as file2:
-            file2.write(true_solution)
-        # Create the file with the author's test cases
-        with open('randomFile.py', 'w') as file3:
-            file3.write(tests)
-        # Create the file with the author's hard test cases
-        with open('hardFile.py', 'w') as file4:
-            if mode == 'hard':
-                file4.write(custom_hard_tests)
-            else:
-                file4.write(hard_tests)
+        file_id = uuid.uuid4()
+
+        create_files(code, true_solution, tests, custom_hard_tests, hard_tests, mode, file_id)
 
         client = docker.from_env()
         if mode == 'hard':
@@ -167,18 +176,14 @@ def runPythonCode(request, slug, mode, custom_hard_tests):
         else:
             container = client.containers.create(**docker_config)
 
-        os.system(f'docker cp userFile.py {container.name}:/app/vol/userFile.py')
-        os.system(f'docker cp authorFile.py {container.name}:/app/vol/authorFile.py')
-        os.system(f'docker cp randomFile.py {container.name}:/app/vol/randomFile.py')
-        os.system(f'docker cp hardFile.py {container.name}:/app/vol/hardFile.py')
+        os.system(f'docker cp userFile-{file_id}.py {container.name}:/app/vol/userFile.py')
+        os.system(f'docker cp authorFile-{file_id}.py {container.name}:/app/vol/authorFile.py')
+        os.system(f'docker cp randomFile-{file_id}.py {container.name}:/app/vol/randomFile.py')
+        os.system(f'docker cp hardFile-{file_id}.py {container.name}:/app/vol/hardFile.py')
 
         # Start with that config that stops it after a number of seconds
 
         container.start()
-
-        # Get the exec. time of the container.
-
-        exec_time = compute_exec_time(container)
 
         # Get the logs as a stream of bytes
         logs = container.logs(stdout=True, stderr=True, stream=True)
@@ -195,6 +200,10 @@ def runPythonCode(request, slug, mode, custom_hard_tests):
         exit_code = exit_code.decode("utf-8").strip()
         exit_code = int(exit_code)
 
+        # Get the exec. time of the container.
+
+        exec_time = compute_exec_time(container)
+
         checkExitCode(exit_code, user_id, challenge, code, 'Python', mode, exec_time)
         # Sure to not have failed
 
@@ -203,7 +212,7 @@ def runPythonCode(request, slug, mode, custom_hard_tests):
         raise Exception(f'{e} {logs_str}')
         # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
     finally:
-        removeFilesFromSystem(container, 'Python')
+        removeFilesFromSystem(container, 'Python', file_id)
 
     # return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
 
