@@ -1,7 +1,7 @@
 docker_config = {
     'detach': True,
     # 'command': 'sleep infinity',
-    'image': 'python_cl_img',
+    'image': 'python_cl_img_timeout',
     # 'remove': False,
     'tty': True,
     # 'name': 'C1',

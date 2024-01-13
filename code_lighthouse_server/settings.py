@@ -14,7 +14,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dotenv
-
+os.environ["PATH"] += os.pathsep + 'C:\Program Files\Graphviz/bin/'
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -40,6 +40,7 @@ ALLOWED_HOSTS = ['127.0.0.1', 'stefan3002.pythonanywhere.com', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
+    'django_extensions',
     'rest_framework_simplejwt',
     'rest_framework',
     'corsheaders',

@@ -54,7 +54,7 @@ def checkExitCode(exit_code, user_id, challenge, code, language, mode, exec_time
     if mode != 'hard' and challenge not in user.solved_challenges.all():
         challenge.attempts += 1
         challenge.save()
-
+    print('aa', exit_code)
     if exit_code == 0:
         if mode != 'hard' and challenge not in user.solved_challenges.all():
             user.score += SCORES[challenge.difficulty]
@@ -66,6 +66,8 @@ def checkExitCode(exit_code, user_id, challenge, code, language, mode, exec_time
             user.save()
             if mode != 'hard':
                 saveSubmission(user_id, challenge, code, language, exec_time)
+    elif exit_code == 124:
+        raise Exception('<strong><italic><h3>Solution timed out!</h3></italic></strong>\n<p><strong>Hard</strong> time limit reached!</p>')
     else:
         raise Exception('<strong><italic><h3>Wrong solution submitted!</h3></italic></strong>\n')
 

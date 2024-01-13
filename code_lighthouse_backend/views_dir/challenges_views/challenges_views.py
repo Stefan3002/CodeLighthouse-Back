@@ -24,6 +24,7 @@ class PostChallenge(APIView):
             description = data['description']
             true_function = data['trueFunction']
             random_function = data['randomFunction']
+            hard_function = data['hardFunction']
             language = data['language']
             user_id = data['userId']
             private = data['privateChallenge']
@@ -35,7 +36,7 @@ class PostChallenge(APIView):
                 new_challenge = Challenge(private=private, title=title, description=description, author=user)
                 new_challenge.save()
                 new_code = Code(challenge=new_challenge, language=language, solution=true_function,
-                                random_tests=random_function)
+                                random_tests=random_function, hard_tests=hard_function)
                 new_code.save()
         except Exception as e:
             return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -85,6 +86,7 @@ class GetChallenge(APIView):
             description = data['description']
             true_function = data['trueFunction']
             random_function = data['randomFunction']
+            hard_function = data['hardFunction']
 
             challenge.title = title
             challenge.description = description
@@ -95,9 +97,10 @@ class GetChallenge(APIView):
                 code = Code.objects.get(Q(challenge=challenge) & Q(language=language))
                 code.random_tests = random_function
                 code.solution = true_function
+                code.hard_tests = hard_function
             except Exception as e:
                 code = Code(challenge=challenge, solution=true_function, language=language,
-                            random_tests=random_function)
+                            random_tests=random_function, hard_tests=hard_function)
             finally:
                 code.save()
 
