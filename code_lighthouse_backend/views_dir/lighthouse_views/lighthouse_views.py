@@ -5,8 +5,29 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from code_lighthouse_backend.models import AppUser, Lighthouse
-from code_lighthouse_backend.serializers import LighthouseSerializer
+from code_lighthouse_backend.serializers import LighthouseSerializer, LighthousePreviewSerializer
 from code_lighthouse_backend.utils import get_request_user_id
+
+from code_lighthouse_backend.validations.join_lighthouse_validations import lighthouse_code_validator, lighthouse_id_validator
+from code_lighthouse_backend.validations.create_lighthouse_validation import lighthouse_name_validator, lighthouse_description_validator
+
+
+class GetLighthousePreview(APIView):
+    def get(self, request, lighthouseID):
+        try:
+            # if not len(lighthouseID):
+            #     raise Exception('Missing enrollment code!')
+            lighthouse = Lighthouse.objects.get(id=lighthouseID)
+            # decoded_user_id = get_request_user_id(request)
+            # logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            # if logged_in_user in lighthouse.people.all():
+            serialized_lighthouse = LighthousePreviewSerializer(lighthouse, context={'drill': False})
+            return Response(serialized_lighthouse.data, status=status.HTTP_200_OK)
+            # else:
+            #     raise Exception('This lighthouse does not recognize you. Are you enrolled here?')
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class GetLighthouse(APIView):
@@ -45,10 +66,30 @@ class GetLighthouse(APIView):
 
     def post(self, request, lighthouseID):
         try:
-            userID = request.data['user_id']
+            decoded_user_id = get_request_user_id(request)
+            userDB = AppUser.objects.get(id=decoded_user_id)
+
+
             enrollment_code = request.data['enrollment_code']
-            userDB = AppUser.objects.get(user_id=userID)
+
+            if lighthouse_code_validator["inputNull"] is False and (not enrollment_code or len(enrollment_code) == 0):
+                return Response({'OK': False, 'data': 'Enrollment code is missing!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            if len(enrollment_code) < lighthouse_code_validator["inputMin"]:
+                return Response({'OK': False, 'data': 'Enrollment code is too short!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
             lighthouse = Lighthouse.objects.get(id=lighthouseID)
+
+            if lighthouse_id_validator["inputNull"] is False and not lighthouseID:
+                return Response({'OK': False, 'data': 'ID is missing!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            if lighthouseID < lighthouse_id_validator["inputMin"]:
+                return Response({'OK': False, 'data': 'ID is too short!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
 
             if str(lighthouse.enrollment_code) == enrollment_code:
                 lighthouse.people.add(userDB)
@@ -84,11 +125,30 @@ class CreateLighthouse(APIView):
         try:
             data = request.data
             name = data['name']
+
+            if lighthouse_name_validator["inputNull"] is False and (not name or len(name) == 0):
+                return Response({'OK': False, 'data': 'Name of Lighthouse is missing!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            if len(name) < lighthouse_name_validator["inputMin"]:
+                return Response({'OK': False, 'data': 'Name of Lighthouse too short!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
             description = data['description']
-            user_id = data['user_id']
+
+            if lighthouse_description_validator["inputNull"] is False and (not description or len(description) == 0):
+                return Response({'OK': False, 'data': 'Description of Lighthouse is missing!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            if len(description) < lighthouse_description_validator["inputMin"]:
+                return Response({'OK': False, 'data': 'Description of Lighthouse too short!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            decoded_user_id = get_request_user_id(request)
+            author = AppUser.objects.get(id=decoded_user_id)
+
             community = data['community']
 
-            author = AppUser.objects.get(user_id=user_id)
             new_lighthouse = Lighthouse(name=name, description=description, author=author, public=community)
             new_lighthouse.save()
             new_lighthouse.people.add(author)

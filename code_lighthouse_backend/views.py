@@ -21,7 +21,7 @@ from code_lighthouse_backend.email_sending.send_emails import send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, Announcement
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
-    SubmissionSerializer
+    SubmissionSerializer, AppUserPublicSerializer
 from code_lighthouse_backend.utils import retrieve_token, retrieve_secret, get_request_user_id
 
 import firebase_admin
@@ -290,13 +290,18 @@ class GetUser(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, userID):
+        try:
+            decoded_user_id = get_request_user_id(request)
 
-        decoded_user_id = get_request_user_id(request)
-
-        if decoded_user_id == userID:
-            user = AppUser.objects.filter(id=userID)[0]
-            # print(user.lighthouses.all()[0])
-            serialized_user = AppUserSerializer(user, context={'drill': True})
-            return Response(serialized_user.data, status=status.HTTP_200_OK)
-        else:
-            return Response({'data': 'Forbidden info!'}, status=status.HTTP_403_FORBIDDEN)
+            if decoded_user_id == userID:
+                user = AppUser.objects.filter(id=userID)[0]
+                # print(user.lighthouses.all()[0])
+                serialized_user = AppUserSerializer(user, context={'drill': True})
+                return Response(serialized_user.data, status=status.HTTP_200_OK)
+            else:
+                user = AppUser.objects.filter(id=userID)[0]
+                # Return the public info!
+                serialized_user = AppUserPublicSerializer(user, context={'drill': True})
+                return Response(serialized_user.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
