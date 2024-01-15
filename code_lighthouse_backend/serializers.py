@@ -123,6 +123,7 @@ class AssignmentSerializer(serializers.ModelSerializer):
 
     users = serializers.SerializerMethodField()
     challenge = serializers.SerializerMethodField()
+    lighthouse = serializers.SerializerMethodField()
 
     def get_challenge(self, lighthouse):
         challenge = lighthouse.challenge
@@ -131,6 +132,10 @@ class AssignmentSerializer(serializers.ModelSerializer):
     def get_users(self, assignment):
         user_ids = assignment.users.all()
         return AppUserSerializer(user_ids, many=True).data
+
+    def get_lighthouse(self, assignment):
+        lighthouse = assignment.lighthouse
+        return LighthouseAssignmentSerializer(lighthouse).data
 
 
 class LighthousePreviewSerializer(serializers.ModelSerializer):
@@ -144,6 +149,11 @@ class LighthousePreviewSerializer(serializers.ModelSerializer):
         author = lighthouse.author
         return AppUserSerializer(author).data
 
+
+class LighthouseAssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lighthouse
+        fields = ['id', 'name']
 
 class LighthouseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -183,6 +193,8 @@ class AppUserPublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppUser
         fields = ['username', 'photoURL', 'score', 'solved_challenges']
+
+    solved_challenges = serializers.SerializerMethodField()
 
     def get_solved_challenges(self, app_user):
         challenges = app_user.solved_challenges.all()

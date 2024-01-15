@@ -136,9 +136,11 @@ class GetChallenge(APIView):
             true_function = data['trueFunction']
             random_function = data['randomFunction']
             hard_function = data['hardFunction']
+            time_limit = data['timeLimit']
 
             challenge.title = title
             challenge.description = description
+            challenge.time_limit = time_limit
 
             code = None
 

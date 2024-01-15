@@ -156,7 +156,7 @@ def create_files(code, true_solution, tests, custom_hard_tests, hard_tests, mode
         else:
             file4.write(hard_tests)
 
-def runPythonCode(request, slug, mode, custom_hard_tests):
+def runPythonCode(request, slug, mode, custom_hard_tests, soft_time_limit = 6):
     challenge = Challenge.objects.filter(slug=slug)[0]
     challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Python'))
     true_solution = challenge_code.solution
@@ -165,6 +165,7 @@ def runPythonCode(request, slug, mode, custom_hard_tests):
     code = request.data['code']
     user_id = request.data['userId']
     try:
+        print('aaaaaaa', soft_time_limit)
 
         verify_functions(true_solution, code, tests, 'python')
 
@@ -203,8 +204,13 @@ def runPythonCode(request, slug, mode, custom_hard_tests):
         exit_code = int(exit_code)
 
         # Get the exec. time of the container.
-
         exec_time = compute_exec_time(container)
+
+        # Return error if it passed the challenge author's max time
+        if exec_time > soft_time_limit:
+            raise Exception(
+                f'<strong><italic><h3>Solution timed out!</h3></italic></strong>\n<p><strong>Soft</strong> time limit '
+                f'reached: {soft_time_limit}s! Your execution time: {str(exec_time)[:4]}s.</p>')
 
         checkExitCode(exit_code, user_id, challenge, code, 'Python', mode, exec_time)
         # Sure to not have failed

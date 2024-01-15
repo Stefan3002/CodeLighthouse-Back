@@ -54,6 +54,7 @@ class Challenge(models.Model):
     denied = models.BooleanField(default=False)
     attempts = models.IntegerField(max_length=100, default=0)
     solved = models.IntegerField(max_length=100, default=0)
+    time_limit = models.FloatField(default=6)
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)

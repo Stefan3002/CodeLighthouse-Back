@@ -55,10 +55,11 @@ class RunUserCode(APIView):
 
         data = request.data
         language = data['language']
+        soft_time_limit = data['timeLimit']
 
         if language == 'Python':
             try:
-                results = runPythonCode(request, slug, 'full', '')
+                results = runPythonCode(request, slug, 'full', '', soft_time_limit)
                 logs_str = results[0]
                 exec_time = results[1]
                 # Success!
@@ -98,6 +99,8 @@ class RunUserHardCode(APIView):
 
         data = request.data
         language = data['language']
+        # soft_time_limit = data['timeLimit']
+
 
         custom_hard_tests = data['hardTests']
 
