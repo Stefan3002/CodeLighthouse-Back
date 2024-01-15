@@ -134,6 +134,13 @@ class CreateLighthouse(APIView):
                 return Response({'OK': False, 'data': 'Name of Lighthouse too short!'},
                             status=status.HTTP_400_BAD_REQUEST)
 
+            # Check for duplicates!!!
+            duplicate = Lighthouse.objects.filter(name=name)
+
+            if(duplicate):
+                return Response({'OK': False, 'data': 'Lighthouse with that name already exists!'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
             description = data['description']
 
             if lighthouse_description_validator["inputNull"] is False and (not description or len(description) == 0):

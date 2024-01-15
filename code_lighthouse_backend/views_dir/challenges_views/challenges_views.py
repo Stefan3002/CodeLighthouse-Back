@@ -9,6 +9,7 @@ from code_lighthouse_backend.models import Challenge, AppUser, Code, Reports
 from code_lighthouse_backend.serializers import ChallengeSerializer
 from code_lighthouse_backend.utils import get_request_user_id
 
+from code_lighthouse_backend.validations.create_challenge_validations import challenge_name_validator, challenge_description_validator, challenge_randomFunction_validator, challenge_hardFunction_validator, challenge_trueFunction_validator
 
 
 class PostChallenge(APIView):
@@ -21,15 +22,63 @@ class PostChallenge(APIView):
         try:
             data = request.data
             title = data['title']
+
+            if challenge_name_validator["inputNull"] is False and (not title or len(title) == 0):
+                return Response({'OK': False, 'data': 'Name of Challenge is missing!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            if len(title) < challenge_name_validator["inputMin"]:
+                return Response({'OK': False, 'data': 'Name of Challenge is too short!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            # Check for duplicates!!!
+            duplicate = Challenge.objects.filter(title=title)
+            if (duplicate):
+                return Response({'OK': False, 'data': 'Challenge with that name already exists!'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+
             description = data['description']
+
+            if challenge_description_validator["inputNull"] is False and (not description or len(description) == 0):
+                return Response({'OK': False, 'data': 'Description of Challenge is missing!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            if len(description) < challenge_description_validator["inputMin"]:
+                return Response({'OK': False, 'data': 'Description of Challenge is too short!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
             true_function = data['trueFunction']
+
+            if challenge_trueFunction_validator["inputNull"] is False and (not true_function or len(true_function) == 0):
+                return Response({'OK': False, 'data': 'The True function of the Challenge is missing!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
             random_function = data['randomFunction']
+
+            if challenge_randomFunction_validator["inputNull"] is False and (not random_function or len(random_function) == 0):
+                return Response({'OK': False, 'data': 'The Random function of the Challenge is missing!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
             hard_function = data['hardFunction']
+
+            if challenge_hardFunction_validator["inputNull"] is False and (not hard_function or len(hard_function) == 0):
+                return Response({'OK': False, 'data': 'The Hard function of the Challenge is missing!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
             language = data['language']
-            user_id = data['userId']
+
+            if not language:
+                return Response({'OK': False, 'data': 'Something went wrong on our side! We apologize!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+
+            decoded_user_id = get_request_user_id(request)
+            user = AppUser.objects.get(id=decoded_user_id)
+
             private = data['privateChallenge']
 
-            user = AppUser.objects.get(user_id=user_id)
 
 
             with transaction.atomic():
