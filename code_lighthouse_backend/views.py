@@ -248,7 +248,6 @@ class Announcements(APIView):
 
             # Send E-mails.
             for receiver in lighthouse.people.all():
-                print(receiver.email)
                 format_new_announcement_email(receiver.username, lighthouse.name, content)
                 send_email(receiver_email=receiver.email, message=new_announcement_message)
 

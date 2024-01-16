@@ -5,6 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
+
+from code_lighthouse_backend.email_sending.messages import format_new_admin_email, new_admin_message
+from code_lighthouse_backend.email_sending.send_emails import send_email_async, send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Code, Reports
 from code_lighthouse_backend.serializers import ChallengeSerializer
 from code_lighthouse_backend.utils import get_request_user_id
@@ -22,6 +25,8 @@ class PostChallenge(APIView):
         try:
             data = request.data
             title = data['title']
+            time_limit = data['timeLimit']
+
 
             if challenge_name_validator["inputNull"] is False and (not title or len(title) == 0):
                 return Response({'OK': False, 'data': 'Name of Challenge is missing!'},
@@ -79,10 +84,8 @@ class PostChallenge(APIView):
 
             private = data['privateChallenge']
 
-
-
             with transaction.atomic():
-                new_challenge = Challenge(private=private, title=title, description=description, author=user)
+                new_challenge = Challenge(time_limit=time_limit, private=private, title=title, description=description, author=user)
                 new_challenge.save()
                 new_code = Code(challenge=new_challenge, language=language, solution=true_function,
                                 random_tests=random_function, hard_tests=hard_function)
@@ -190,14 +193,32 @@ class AdminGetChallenges(APIView):
             return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class AdminGetDeniedChallenges(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+            if not logged_in_user.admin_user:
+                return Response({'data': 'Hey there now! You are not an admin!!'}, status=status.HTTP_403_FORBIDDEN)
+
+            challenges = Challenge.objects.filter(Q(public=False) & Q(private=False) & Q(denied=True))
+            return Response(ChallengeSerializer(challenges, many=True).data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class ChallengeAdmin(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     def post(self, request, slug):
-        data = request.data
-        verdict = data['verdict']
-
         try:
+            data = request.data
+            verdict = data['verdict']
+            details = data['details']
+
             challenge = Challenge.objects.get(slug=slug)
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
@@ -210,6 +231,9 @@ class ChallengeAdmin(APIView):
             elif verdict == 'send-back':
                 challenge.public = False
                 challenge.status = 'Needs improvement'
+
+                format_new_admin_email(challenge.author.username, challenge.title, details)
+                send_email(receiver_email=challenge.author.email, message=new_admin_message)
             elif verdict == 'deny':
                 challenge.public = False
                 challenge.status = 'Denied'
