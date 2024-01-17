@@ -40,6 +40,7 @@ ALLOWED_HOSTS = ['127.0.0.1', 'stefan3002.pythonanywhere.com', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
+    'django_cron',
     'django_extensions',
     'rest_framework_simplejwt',
     'rest_framework',
@@ -51,6 +52,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+]
+
+CRON_CLASSES = [
+    "code_lighthouse_backend.cron.purge_denied_challenges.purge_denied_challenges_cron",
 ]
 
 MIDDLEWARE = [
