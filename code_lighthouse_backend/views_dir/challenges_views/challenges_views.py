@@ -226,6 +226,12 @@ class ChallengeAdmin(APIView):
             if not logged_in_user.admin_user:
                 return Response({'data': 'Hey there now! You are not an admin!!'}, status=status.HTTP_403_FORBIDDEN)
 
+            if verdict == 'difficulty':
+                challenge.difficulty = details
+                challenge.save()
+                return Response({'data': 'Action completed admin!'}, status=status.HTTP_201_CREATED)
+
+
             if verdict == 'approve':
                 challenge.public = True
             elif verdict == 'send-back':

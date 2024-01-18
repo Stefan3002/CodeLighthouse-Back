@@ -52,7 +52,7 @@ class GetReports(APIView):
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
 
-            reports = Reports.objects.filter(Q(closed=False) & Q(assigned_admin=logged_in_user))
+            reports = Reports.objects.filter(Q(closed=False))
 
             return Response(ReportSerializer(reports, many=True).data, status=status.HTTP_200_OK)
 
