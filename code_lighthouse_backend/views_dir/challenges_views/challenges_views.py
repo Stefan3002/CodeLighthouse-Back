@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.db.models import Q
+from django.utils.text import slugify
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -170,9 +171,32 @@ class GetChallenges(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, lower_limit, upper_limit):
-        challenges = Challenge.objects.all().order_by('-id')[lower_limit: upper_limit]
-        serialized_challenge = ChallengeSerializer(challenges, many=True)
-        return Response(serialized_challenge.data, status=status.HTTP_200_OK)
+        try:
+            challenges = Challenge.objects.all().order_by('-id')[lower_limit: upper_limit]
+            serialized_challenge = ChallengeSerializer(challenges, many=True)
+            return Response(serialized_challenge.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GetChallengesSearch(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, target_name):
+        decoded_user_id = get_request_user_id(request)
+        logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+
+        challenges = Challenge.objects.filter(Q(slug__contains=slugify(target_name))).order_by('-id')
+        challenges = challenges.filter((Q(private=True) & Q(author = logged_in_user)) | Q(private=False))
+
+        if not len(challenges):
+            return Response({'OK': False, 'data': 'Challenge not found!'},
+                            status=status.HTTP_404_NOT_FOUND)
+        serialized_challenges = ChallengeSerializer(challenges, many=True)
+        return Response(serialized_challenges.data, status=status.HTTP_200_OK)
 
 
 class AdminGetChallenges(APIView):

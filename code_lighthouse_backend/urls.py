@@ -30,6 +30,7 @@ urlpatterns = [
     path('challenges-admin/<slug:slug>', challenges_views.ChallengeAdmin.as_view()),
     path('challenges-report/<slug:slug>', reports_views.ChallengeReport.as_view()),
     path('challenges/<int:lower_limit>/<int:upper_limit>', challenges_views.GetChallenges.as_view()),
+    path('challenges-search/<str:target_name>', challenges_views.GetChallengesSearch.as_view()),
     path('users/<int:userID>', views.GetUser.as_view()),
 
     path('lighthouses/<int:lighthouseID>', lighthouse_views.GetLighthouse.as_view()),

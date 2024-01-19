@@ -27,6 +27,10 @@ from code_lighthouse_backend.utils import retrieve_token, retrieve_secret, get_r
 import firebase_admin
 from firebase_admin import credentials
 
+from code_lighthouse_backend.validations.create_announcement_validation import announcement_content_validator
+
+
+
 cred = credentials.Certificate(
     r"C:\Users\Stefan\PycharmProjects\djangoProject1\code_lighthouse_backend\codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
 # cred = credentials.Certificate(r"./codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
@@ -233,6 +237,15 @@ class Announcements(APIView):
             data = request.data
             lighthouse_id = data['lighthouseId']
             content = data['content']
+
+            if announcement_content_validator["inputNull"] is False and (not content or len(content) == 0):
+                return Response({'OK': False, 'data': 'Announcement is missing!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            if len(content) < announcement_content_validator["inputMin"]:
+                return Response({'OK': False, 'data': 'Announcement is too short!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
 
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
