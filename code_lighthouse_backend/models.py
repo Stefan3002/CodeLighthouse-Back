@@ -40,6 +40,14 @@ class Comment(models.Model):
     def __str__(self):
         return f'{self.author} on {self.challenge}'
 
+class Notification(models.Model):
+    user = models.ForeignKey(AppUser, related_name='notifications', on_delete=models.DO_NOTHING)
+    read = models.BooleanField(default=False)
+    content = models.CharField(max_length=1000, default='')
+    date = models.DateTimeField(default=datetime.datetime.now())
+
+    def __str__(self):
+        return f'{self.user}'
 
 class Challenge(models.Model):
     title = models.CharField(max_length=50)

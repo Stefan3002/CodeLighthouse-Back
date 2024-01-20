@@ -260,9 +260,9 @@ class Announcements(APIView):
             new_announcement.save()
 
             # Send E-mails.
-            for receiver in lighthouse.people.all():
-                format_new_announcement_email(receiver.username, lighthouse.name, content)
-                send_email(receiver_email=receiver.email, message=new_announcement_message)
+            # for receiver in lighthouse.people.all():
+            #     format_new_announcement_email(receiver.username, lighthouse.name, content)
+            #     send_email(receiver_email=receiver.email, message=new_announcement_message)
 
             return Response({"data": 'Successfully created!'}, status=status.HTTP_201_CREATED)
         except Exception as e:

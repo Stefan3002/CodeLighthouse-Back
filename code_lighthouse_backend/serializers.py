@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment, Comment, Like, Code, Submission, \
-    Reports, Announcement
+    Reports, Announcement, Notification
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -189,6 +189,11 @@ class LikeSerializer(serializers.ModelSerializer):
         model = Like
         fields = '__all__'
 
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
 class AppUserPublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppUser
@@ -210,6 +215,7 @@ class AppUserSerializer(serializers.ModelSerializer):
     liked_challenges = serializers.SerializerMethodField()
     submissions = serializers.SerializerMethodField()
     assigned_reports = serializers.SerializerMethodField()
+    notifications = serializers.SerializerMethodField()
 
     def get_solved_challenges(self, app_user):
         challenges = app_user.solved_challenges.all()
@@ -234,6 +240,10 @@ class AppUserSerializer(serializers.ModelSerializer):
     def get_liked_challenges(self, app_user):
         liked_challenges = app_user.liked_challenges
         return LikeSerializer(liked_challenges, many=True).data
+
+    def get_notifications(self, app_user):
+        notifications = app_user.notifications.all()
+        return NotificationSerializer(notifications, many=True).data
 
     def get_authored_challenges(self, app_user):
         challenges = app_user.authored_challenges.all()

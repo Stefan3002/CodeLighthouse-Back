@@ -3,8 +3,9 @@ import os
 import jwt
 
 
-def get_request_user_id(request):
-    token = retrieve_token(request)
+def get_request_user_id(request, token=None, no_request=False):
+    if not no_request:
+        token = retrieve_token(request)
     secret = retrieve_secret()
     decoded_user = jwt.decode(token, secret,
                               algorithms=["HS256"])
