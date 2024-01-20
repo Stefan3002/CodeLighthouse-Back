@@ -40,6 +40,9 @@ ALLOWED_HOSTS = ['127.0.0.1', 'stefan3002.pythonanywhere.com', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
+
     'django_cron',
     'django_extensions',
     'rest_framework_simplejwt',
@@ -133,6 +136,13 @@ SIMPLE_JWT = {
 
 
 WSGI_APPLICATION = 'code_lighthouse_server.wsgi.application'
+ASGI_APPLICATION = 'code_lighthouse_server.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -172,6 +182,8 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
