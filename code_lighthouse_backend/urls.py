@@ -20,6 +20,7 @@ urlpatterns = [
     path('challenges', challenges_views.PostChallenge.as_view()),
     path('communities', views.Communities.as_view()),
     path('reports', reports_views.GetReports.as_view()),
+    path('announcements-delete/<int:announcement_id>', views.Announcements.as_view()),
     path('announcements', views.Announcements.as_view()),
     path('reports/<int:id>', reports_views.GetReports.as_view()),
     path('submissions/<int:assignment_id>', views.GetAssignmentSubmissionsView.as_view()),
@@ -32,6 +33,8 @@ urlpatterns = [
     path('challenges/<int:lower_limit>/<int:upper_limit>', challenges_views.GetChallenges.as_view()),
     path('challenges-search/<str:target_name>', challenges_views.GetChallengesSearch.as_view()),
     path('users/<int:userID>', views.GetUser.as_view()),
+    path('notifications/<int:notification_id>', views.Notifications.as_view()),
+    path('notifications-all', views.NotificationsAll.as_view()),
 
     path('lighthouses/<int:lighthouseID>', lighthouse_views.GetLighthouse.as_view()),
     path('lighthouses-preview/<int:lighthouseID>', lighthouse_views.GetLighthousePreview.as_view()),

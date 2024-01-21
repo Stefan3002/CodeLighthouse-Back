@@ -31,7 +31,9 @@ class NotificationConsumer(WebsocketConsumer):
         self.accept()
         self.send(text_data=json.dumps({
             'type': 'connected',
-            'message': 'CONNECTED!!'
+            'content': 'CONNECTED!!',
+            'id': '1',
+            'read': False
         }))
 
     def disconnect(self, code):
@@ -51,16 +53,18 @@ class NotificationConsumer(WebsocketConsumer):
             room_name = f'lighthouse-{lighthouse.id}'
 
             for person in lighthouse.people.all():
-                new_notification = Notification(user=person, content=message['message'])
+                new_notification = Notification(user=person, content=message['message'], url=message['url'])
                 new_notification.save()
 
-                async_to_sync(self.channel_layer.group_send)(
-                    room_name,
-                    {
-                        'type': 'notification',
-                        'message': message['message']
-                    }
-                )
+            async_to_sync(self.channel_layer.group_send)(
+                room_name,
+                {
+                    'type': 'notification',
+                    'content': message['message'],
+                    'url': message['url']
+                    # 'id': new_notification.id
+                }
+            )
 
     def notification(self, text_data):
         self.send(text_data=json.dumps(text_data))

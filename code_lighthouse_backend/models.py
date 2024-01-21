@@ -45,6 +45,7 @@ class Notification(models.Model):
     read = models.BooleanField(default=False)
     content = models.CharField(max_length=1000, default='')
     date = models.DateTimeField(default=datetime.datetime.now())
+    url = models.URLField(max_length=10, default='')
 
     def __str__(self):
         return f'{self.user}'

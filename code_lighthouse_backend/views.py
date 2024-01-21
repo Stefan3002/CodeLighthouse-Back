@@ -18,7 +18,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from code_lighthouse_backend.email_sending.messages import new_announcement_message, format_new_announcement_email
 from code_lighthouse_backend.email_sending.send_emails import send_email
-from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, Announcement
+from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, \
+    Announcement, Notification
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer, AppUserPublicSerializer
@@ -268,6 +269,62 @@ class Announcements(APIView):
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, announcement_id):
+        try:
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            announcement = Announcement.objects.get(id=announcement_id)
+
+
+            if logged_in_user == announcement.author:
+                announcement.delete()
+                return Response({'OK': True, 'data': 'Successfully deleted!'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'OK': False, 'data': 'This is not your announcement!'},
+                                status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class Notifications(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, notification_id):
+        try:
+            notification = Notification.objects.get(id=notification_id)
+
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if logged_in_user == notification.user:
+                notification.delete()
+                return Response({'OK': True, 'data': 'Successfully deleted!'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'OK': False, 'data': 'That update was not intended for you!'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class NotificationsAll(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        try:
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            notifications = logged_in_user.notifications.all()
+
+            for notification in notifications:
+                notification.delete()
+
+            return Response({'OK': True, 'data': 'Successfully deleted!'}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class Assignments(APIView):
     authentication_classes = [JWTAuthentication]
