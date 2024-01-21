@@ -1,3 +1,4 @@
+from django.conf.urls.static import static
 from django.urls import path
 from rest_framework_simplejwt import views as jwt_views
 
@@ -6,6 +7,7 @@ from code_lighthouse_backend.views_dir.auth_views import auth_views
 from code_lighthouse_backend.views_dir.lighthouse_views import lighthouse_views
 from code_lighthouse_backend.views_dir.challenges_views import challenges_views
 from code_lighthouse_backend.views_dir.reports_views import reports_views
+from code_lighthouse_server import settings
 
 urlpatterns = [
     # path('token', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -36,6 +38,8 @@ urlpatterns = [
     path('notifications/<int:notification_id>', views.Notifications.as_view()),
     path('notifications-all', views.NotificationsAll.as_view()),
 
+    path('file/<str:file_name>', views.ViewFile.as_view()),
+
     path('lighthouses/<int:lighthouseID>', lighthouse_views.GetLighthouse.as_view()),
     path('lighthouses-preview/<int:lighthouseID>', lighthouse_views.GetLighthousePreview.as_view()),
 
@@ -43,3 +47,6 @@ urlpatterns = [
     path('create-lighthouses', lighthouse_views.CreateLighthouse.as_view()),
     path('lighthouses/<int:lower_limit>/<int:upper_limit>', lighthouse_views.GetLighthouses.as_view())
 ]
+
+# if settings.DEBUG:
+#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

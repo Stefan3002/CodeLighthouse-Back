@@ -50,6 +50,7 @@ class AnnouncementSerializer(serializers.ModelSerializer):
         author = announcement.author
         return AppUserSerializer(author).data
 
+
     def get_lighthouse(self, announcement):
         lighthouse = announcement.lighthouse
         if self.context.get('drill'):

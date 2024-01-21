@@ -3,12 +3,15 @@ import traceback
 
 import firebase_admin
 import jwt
+from django.core.files import File
+from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from firebase_admin import auth
 from rest_framework import status
 from django.core.serializers import serialize
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.views import View
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -238,6 +241,8 @@ class Announcements(APIView):
             data = request.data
             lighthouse_id = data['lighthouseId']
             content = data['content']
+            files = data['files']
+
 
             if announcement_content_validator["inputNull"] is False and (not content or len(content) == 0):
                 return Response({'OK': False, 'data': 'Announcement is missing!'},
@@ -257,7 +262,7 @@ class Announcements(APIView):
             if len(content.strip()) < 15:
                 return Response({"data": 'Too short announcement!'}, status=status.HTTP_400_BAD_REQUEST)
 
-            new_announcement = Announcement(lighthouse=lighthouse, author=logged_in_user, content=content)
+            new_announcement = Announcement(file=files, lighthouse=lighthouse, author=logged_in_user, content=content)
             new_announcement.save()
 
             # Send E-mails.
@@ -306,6 +311,32 @@ class Notifications(APIView):
                 return Response({'OK': False, 'data': 'That update was not intended for you!'}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ViewFile(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, file_name):
+        try:
+            # notification = Notification.objects.get(id=notification_id)
+
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            # if logged_in_user == notification.user:
+            #     notification.delete()
+            #     return Response({'OK': True, 'data': 'Successfully deleted!'}, status=status.HTTP_200_OK)
+            # else:
+            # uploaded_file
+
+
+
+            # uploaded_file =
+
+            return FileResponse(open(f'media/uploads/files/{file_name}', 'rb'))
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class NotificationsAll(APIView):
     authentication_classes = [JWTAuthentication]

@@ -115,7 +115,8 @@ class Announcement(models.Model):
     author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING)
     content = models.TextField(max_length=2000)
     date = models.DateField(default=datetime.datetime.now())
-    lighthouse = models.ForeignKey(Lighthouse, related_name='announcements' , on_delete=models.DO_NOTHING, null=True)
+    lighthouse = models.ForeignKey(Lighthouse, related_name='announcements', on_delete=models.DO_NOTHING, null=True)
+    file = models.FileField(upload_to='uploads/files', default='uploads/files')
 
     def __str__(self):
         return f'{self.lighthouse} on {self.date}'
