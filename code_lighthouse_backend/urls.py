@@ -30,6 +30,7 @@ urlpatterns = [
     path('challenges/<slug:slug>', challenges_views.GetChallenge.as_view()),
     path('admin-denied', challenges_views.AdminGetDeniedChallenges.as_view()),
     path('admin', challenges_views.AdminGetChallenges.as_view()),
+    path('chat-bot', views.ChatBot.as_view()),
     path('challenges-admin/<slug:slug>', challenges_views.ChallengeAdmin.as_view()),
     path('challenges-report/<slug:slug>', reports_views.ChallengeReport.as_view()),
     path('challenges/<int:lower_limit>/<int:upper_limit>', challenges_views.GetChallenges.as_view()),
