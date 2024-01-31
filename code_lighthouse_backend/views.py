@@ -1,3 +1,4 @@
+import datetime
 import sys
 import traceback
 
@@ -24,7 +25,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from code_lighthouse_backend.email_sending.messages import new_announcement_message, format_new_announcement_email
 from code_lighthouse_backend.email_sending.send_emails import send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, \
-    Announcement, Notification
+    Announcement, Notification, Log
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer, AppUserPublicSerializer
@@ -36,7 +37,9 @@ from firebase_admin import credentials
 from code_lighthouse_backend.validations.create_announcement_validation import announcement_content_validator
 
 cred = credentials.Certificate(
-    r"C:\Users\Stefan\PycharmProjects\djangoProject1\code_lighthouse_backend\codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
+    os.path.join('code_lighthouse_backend', 'codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json')
+)
+    # r"C:\Users\Stefan\PycharmProjects\djangoProject1\code_lighthouse_backend\codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
 # cred = credentials.Certificate(r"./codelighthouse-firebase-adminsdk-n38yt-961212f4bf.json")
 firebase_admin.initialize_app(cred)
 
@@ -316,22 +319,31 @@ class ViewFile(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, file_name):
+    def get(self, request, file_name, lighthouse_id):
         try:
-            # notification = Notification.objects.get(id=notification_id)
 
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
 
-            # if logged_in_user == notification.user:
-            #     notification.delete()
-            #     return Response({'OK': True, 'data': 'Successfully deleted!'}, status=status.HTTP_200_OK)
-            # else:
-            # uploaded_file
+            lighthouse = Lighthouse.objects.get(id=lighthouse_id)
 
-            # uploaded_file =
 
-            return FileResponse(open(f'media/uploads/files/{file_name}', 'rb'))
+            if not lighthouse:
+                return Response({'OK': False, 'data': 'This Lighthouse does not exist?'},
+                                status=status.HTTP_404_NOT_FOUND)
+
+
+            if logged_in_user not in lighthouse.people.all():
+                return Response({'OK': False, 'data': 'You are not allowed to access this file!'},
+                                status=status.HTTP_403_FORBIDDEN)
+            print(lighthouse.people.all(), file_name)
+
+            if os.path.isfile(f'uploads/files/{file_name}'):
+                return FileResponse(open(f'uploads/files/{file_name}', 'rb'))
+            else:
+                return Response({'OK': False, 'data': 'Could not find the file!'}, status=status.HTTP_404_NOT_FOUND)
+
+
         except Exception as e:
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -371,6 +383,73 @@ class ChatBot(APIView):
             # print(response)
 
             return Response({'OK': True, 'data': response}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class Logs(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            # notification = Notification.objects.get(id=notification_id)
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            data = request.data
+            type = data['type']
+
+            if type == 'challenge-in' or type == 'challenge-out':
+                challenge = Challenge.objects.get(slug=data['challenge'])
+
+            time = datetime.datetime.now(datetime.timezone.utc)
+
+            time_difference_same_log = 1200  # In seconds!
+
+            if type == 'challenge-in':
+                # Get the closest already existing log
+                log = Log.objects.filter(Q(author=logged_in_user) & Q(type='challenge')).order_by('-time_out')
+                # print((time - log[0].time_in).total_seconds())
+                if log:
+                    if log[0].time_out and (time - log[0].time_out).total_seconds() <= time_difference_same_log:
+                        pass
+                    elif log[0].time_out:
+                        new_log = Log(challenge=challenge, type='challenge', author=logged_in_user, time_in=time,
+                                      time_out=None)
+                        new_log.save()
+                else:
+                    new_log = Log(challenge=challenge, type='challenge', author=logged_in_user, time_in=time,
+                                  time_out=None)
+                    new_log.save()
+            if type == 'challenge-out':
+                log = Log.objects.filter(Q(author=logged_in_user) & Q(type='challenge')).order_by('-time_out').first()
+                print(log, time)
+                log.time_out = time
+                log.save()
+
+            if type == 'log-in':
+                # Get the closest already existing log
+                log = Log.objects.filter(Q(author=logged_in_user) & Q(type='auth')).order_by('-time_out')
+                # print((time - log[0].time_in).total_seconds())
+                if log:
+                    if log[0].time_out and (time - log[0].time_out).total_seconds() <= time_difference_same_log:
+                        pass
+                    elif log[0].time_out:
+                        new_log = Log(type='auth', author=logged_in_user, time_in=time, time_out=None)
+                        new_log.save()
+                else:
+                    new_log = Log(type='auth', author=logged_in_user, time_in=time, time_out=None)
+                    new_log.save()
+            if type == 'log-out':
+                log = Log.objects.filter(Q(author=logged_in_user) & Q(type='auth')).order_by('-time_out').first()
+                print(log, time)
+                log.time_out = time
+                log.save()
+                # log.save()
+
+            return Response({'OK': True, 'data': 'Logged!'}, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

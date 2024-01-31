@@ -1,7 +1,8 @@
+from django.db.models import Q
 from rest_framework import serializers
 
 from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment, Comment, Like, Code, Submission, \
-    Reports, Announcement, Notification
+    Reports, Announcement, Notification, Log
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -84,6 +85,10 @@ class SubmissionSerializer(serializers.ModelSerializer):
         user = submission.user
         return AppUserSerializer(user).data
 
+class LogsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Log
+        fields = '__all__'
 
 class ChallengeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -95,7 +100,11 @@ class ChallengeSerializer(serializers.ModelSerializer):
     likes_received = serializers.SerializerMethodField()
     codes = serializers.SerializerMethodField()
     submissions = serializers.SerializerMethodField()
+    user_logs = serializers.SerializerMethodField()
 
+    def get_user_logs(self, challenge):
+        logs = Log.objects.filter(Q(challenge=challenge) & Q(author=self.context.get('requesting_user')))
+        return LogsSerializer(logs, many=True).data
     def get_submissions(self, challenge):
         submissions = challenge.challenge_submissions.all()
         return SubmissionSerializer(submissions, many=True).data

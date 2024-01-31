@@ -38,8 +38,9 @@ urlpatterns = [
     path('users/<int:userID>', views.GetUser.as_view()),
     path('notifications/<int:notification_id>', views.Notifications.as_view()),
     path('notifications-all', views.NotificationsAll.as_view()),
+    path('logs', views.Logs.as_view()),
 
-    path('file/<str:file_name>', views.ViewFile.as_view()),
+    path('file/<str:file_name>/<int:lighthouse_id>', views.ViewFile.as_view()),
 
     path('lighthouses/<int:lighthouseID>', lighthouse_views.GetLighthouse.as_view()),
     path('lighthouses-preview/<int:lighthouseID>', lighthouse_views.GetLighthousePreview.as_view()),

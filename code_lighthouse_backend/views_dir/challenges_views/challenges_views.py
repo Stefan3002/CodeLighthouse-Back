@@ -124,7 +124,7 @@ class GetChallenge(APIView):
                 if not logged_in_user.admin_user:
                     return Response({"data": "This challenge has not yet passed our verification!"}, status=status.HTTP_403_FORBIDDEN)
 
-            serialized_challenge = ChallengeSerializer(challenge)
+            serialized_challenge = ChallengeSerializer(challenge, context={'requesting_user': logged_in_user})
             return Response(serialized_challenge.data, status=status.HTTP_200_OK)
         except Exception as e:
             print(e)

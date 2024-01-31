@@ -99,6 +99,17 @@ class Lighthouse(models.Model):
     def __str__(self):
         return f'{self.name} by {self.author.username}'
 
+class Log(models.Model):
+    author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='user_logs', null=True,
+                               blank=True)
+    time_in = models.DateTimeField(null=True)
+    time_out = models.DateTimeField(null=True)
+    type = models.CharField(max_length=100)
+    challenge = models.ForeignKey(Challenge, related_name='logs_featured_in', on_delete=models.DO_NOTHING, null=True, default=None)
+
+    def __str__(self):
+        return f'{self.time_in} by {self.author.username}'
+
 
 class Reports(models.Model):
     reason = models.CharField(max_length=30)
