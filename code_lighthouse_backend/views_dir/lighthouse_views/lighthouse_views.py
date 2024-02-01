@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -29,7 +31,25 @@ class GetLighthousePreview(APIView):
         except Exception as e:
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class ChangeEnrollLighthouse(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request, lighthouseID):
+        try:
+            lighthouse = Lighthouse.objects.get(id=lighthouseID)
+
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if logged_in_user == lighthouse.author:
+                lighthouse.enrollment_code = uuid.uuid4()
+                lighthouse.save()
+                return Response({'OK': True, 'data': 'Enrollment code successfully generated!'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'OK': False, 'data': 'You are not the owner of the Lighthouse!'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class GetLighthouse(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]

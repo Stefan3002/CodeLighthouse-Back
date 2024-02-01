@@ -247,6 +247,9 @@ class Announcements(APIView):
             content = data['content']
             files = data['files']
 
+            if files == 'undefined':
+                files = None
+
             if announcement_content_validator["inputNull"] is False and (not content or len(content) == 0):
                 return Response({'OK': False, 'data': 'Announcement is missing!'},
                                 status=status.HTTP_400_BAD_REQUEST)
