@@ -29,8 +29,10 @@ SCORES = {
 
 
 def compute_exec_time(container):
-    start_time = subprocess.check_output("docker inspect --format='{{.State.StartedAt}}' " + container.name)
-    finish_time = subprocess.check_output("docker inspect --format='{{.State.FinishedAt}}' " + container.name)
+    cmdS = "docker inspect --format='{{.State.StartedAt}}' " + container.name
+    cmdF = "docker inspect --format='{{.State.FinishedAt}}' " + container.name
+    start_time = subprocess.check_output(cmdS, shell=True)
+    finish_time = subprocess.check_output(cmdF, shell=True)
 
     start_time = start_time.decode("utf-8").strip()
     finish_time = finish_time.decode("utf-8").strip()
