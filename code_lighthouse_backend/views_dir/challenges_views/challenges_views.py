@@ -141,8 +141,11 @@ class GetChallenge(APIView):
             random_function = data['randomFunction']
             hard_function = data['hardFunction']
             time_limit = data['timeLimit']
+            private = data['private']
+
 
             challenge.title = title
+            challenge.private = private
             challenge.description = description
             challenge.time_limit = time_limit
 
@@ -172,9 +175,11 @@ class GetChallenges(APIView):
 
     def get(self, request, lower_limit, upper_limit):
         try:
-            challenges = Challenge.objects.all().order_by('-id')[lower_limit: upper_limit]
+            challenges = Challenge.objects.filter(Q(public=True) & Q(private=False)).order_by('-id')[lower_limit: upper_limit]
+            print(challenges)
+
             serialized_challenge = ChallengeSerializer(challenges, many=True)
-            return Response(serialized_challenge.data, status=status.HTTP_200_OK)
+            return Response({"challenges": serialized_challenge.data, "length": len(Challenge.objects.all())}, status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -241,7 +246,7 @@ class ChallengeAdmin(APIView):
         try:
             data = request.data
             verdict = data['verdict']
-            details = data['details']
+
 
             challenge = Challenge.objects.get(slug=slug)
             decoded_user_id = get_request_user_id(request)
@@ -251,6 +256,7 @@ class ChallengeAdmin(APIView):
                 return Response({'data': 'Hey there now! You are not an admin!!'}, status=status.HTTP_403_FORBIDDEN)
 
             if verdict == 'difficulty':
+                details = data['details']
                 challenge.difficulty = details
                 challenge.save()
                 return Response({'data': 'Action completed admin!'}, status=status.HTTP_201_CREATED)
@@ -259,6 +265,7 @@ class ChallengeAdmin(APIView):
             if verdict == 'approve':
                 challenge.public = True
             elif verdict == 'send-back':
+                details = data['details']
                 challenge.public = False
                 challenge.status = 'Needs improvement'
 
