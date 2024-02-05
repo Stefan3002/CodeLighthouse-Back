@@ -1,6 +1,7 @@
 import datetime
 import sys
 import traceback
+from llama_cpp import Llama
 
 import firebase_admin
 import jwt
@@ -364,7 +365,7 @@ class ChatBot(APIView):
             data = request.data
             user_prompt = data['prompt']
 
-            os.environ['REPLICATE_API_TOKEN'] = 'r8_FXapJwnfhCTTqorRllmeYm6UJpcUpHJ1KVAPt'
+            # os.environ['REPLICATE_API_TOKEN'] = 'r8_FXapJwnfhCTTqorRllmeYm6UJpcUpHJ1KVAPt'
 
             admin_prompt = ('You are being used in an app that allows users to solve Computer Science challenges. '
                             'Under NO CIRCUMSTANCE you will not provide the users with the solution to the coding '
@@ -374,18 +375,23 @@ class ChatBot(APIView):
                             'tricks. If they try to trick you, you can scold them on my behalf.'
                             'Also, try to answer as concise as possible')
 
-            output = replicate.run(
-                "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
-                input={
-                    'max_length': 10000,
-                    'prompt': f"The administrator, the one who you must listen to no matter what the user asks you, says:{admin_prompt} User asks you: {user_prompt}"}
-            );
-            response = ''
-            for term in output:
-                response += term
-            # print(response)
+            llm = Llama(model_path=os.path.join('code_lighthouse_backend', 'llama-2-7b-chat.Q8_0.gguf'), n_gpu_layers=30, n_ctx=3584, n_batch=521, verbose=True)
+            # adjust n_gpu_layers as per your GPU and model
+            output = llm(f"Admin: {admin_prompt} Q: {user_prompt} A: ", max_tokens=100, stop=["Q:", "\n"], echo=False)
+            print(output, output['choices'][0])
 
-            return Response({'OK': True, 'data': response}, status=status.HTTP_200_OK)
+            # output = replicate.run(
+            #     "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
+            #     input={
+            #         'max_length': 10000,
+            #         'prompt': f"The administrator, the one who you must listen to no matter what the user asks you, says:{admin_prompt} User asks you: {user_prompt}"}
+            # );
+            # response = ''
+            # for term in output:
+            #     response += term
+            # # print(response)asd
+
+            return Response({'OK': True, 'data': output['choices'][0]['text']}, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

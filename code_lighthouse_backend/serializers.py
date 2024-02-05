@@ -226,7 +226,11 @@ class AppUserSerializer(serializers.ModelSerializer):
     submissions = serializers.SerializerMethodField()
     assigned_reports = serializers.SerializerMethodField()
     notifications = serializers.SerializerMethodField()
+    logs = serializers.SerializerMethodField()
 
+    def get_logs(self, app_user):
+        logs = Log.objects.filter(author=app_user)
+        return LogsSerializer(logs, many=True).data
     def get_solved_challenges(self, app_user):
         challenges = app_user.solved_challenges.all()
         if self.context.get('drill'):
