@@ -407,16 +407,17 @@ class Logs(APIView):
             if type == 'challenge-in' or type == 'challenge-out':
                 challenge = Challenge.objects.get(slug=data['challenge'])
 
+                print(data['challenge'])
+
             time = datetime.datetime.now(datetime.timezone.utc)
 
-            time_difference_same_log = 1200  # In seconds!
+            time_difference_same_log = 120  # In seconds!
 
             if type == 'challenge-in':
                 # Get the closest already existing log
-                log = Log.objects.filter(Q(author=logged_in_user) & Q(type='challenge')).order_by('-time_out')
-                # print((time - log[0].time_in).total_seconds())
+                log = Log.objects.filter(Q(author=logged_in_user) & Q(type='challenge') & Q(challenge=challenge)).order_by('-time_out')
                 if log:
-                    if log[0].time_out and (time - log[0].time_out).total_seconds() <= time_difference_same_log:
+                    if log[len(log) - 1].time_out is None or (log[0].time_out and (time - log[0].time_out).total_seconds() <= time_difference_same_log):
                         pass
                     elif log[0].time_out:
                         new_log = Log(challenge=challenge, type='challenge', author=logged_in_user, time_in=time,
@@ -427,8 +428,11 @@ class Logs(APIView):
                                   time_out=None)
                     new_log.save()
             if type == 'challenge-out':
-                log = Log.objects.filter(Q(author=logged_in_user) & Q(type='challenge')).order_by('-time_out').first()
-                print(log, time)
+                log = Log.objects.filter(Q(author=logged_in_user) & Q(type='challenge')).order_by('-time_out')
+                if log[len(log) - 1].time_out is None:
+                    log = log.last()
+                else:
+                    log = log.first()
                 log.time_out = time
                 log.save()
 
@@ -437,7 +441,7 @@ class Logs(APIView):
                 log = Log.objects.filter(Q(author=logged_in_user) & Q(type='auth')).order_by('-time_out')
                 # print((time - log[0].time_in).total_seconds())
                 if log:
-                    if log[0].time_out and (time - log[0].time_out).total_seconds() <= time_difference_same_log:
+                    if log[len(log) - 1].time_out is None or (log[0].time_out and (time - log[0].time_out).total_seconds() <= time_difference_same_log):
                         pass
                     elif log[0].time_out:
                         new_log = Log(type='auth', author=logged_in_user, time_in=time, time_out=None)
@@ -446,8 +450,12 @@ class Logs(APIView):
                     new_log = Log(type='auth', author=logged_in_user, time_in=time, time_out=None)
                     new_log.save()
             if type == 'log-out':
-                log = Log.objects.filter(Q(author=logged_in_user) & Q(type='auth')).order_by('-time_out').first()
-                print(log, time)
+                log = Log.objects.filter(Q(author=logged_in_user) & Q(type='auth')).order_by('-time_out')
+                if log[len(log) - 1].time_out is None:
+                    log = log.last()
+                else:
+                    log = log.first()
+
                 log.time_out = time
                 log.save()
                 # log.save()
