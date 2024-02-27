@@ -110,6 +110,15 @@ class Log(models.Model):
     def __str__(self):
         return f'{self.time_in} by {self.author.username}'
 
+class Contest(models.Model):
+    author = models.ForeignKey(AppUser, related_name='authored_contests', on_delete=models.DO_NOTHING)
+    name = models.CharField(max_length=60)
+    description = models.TextField(max_length=2000)
+    people = models.ManyToManyField(AppUser, related_name='contests')
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
 
 class Reports(models.Model):
     reason = models.CharField(max_length=30)
