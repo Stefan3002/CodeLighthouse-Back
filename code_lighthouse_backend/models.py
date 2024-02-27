@@ -114,6 +114,7 @@ class Contest(models.Model):
     author = models.ForeignKey(AppUser, related_name='authored_contests', on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=60)
     description = models.TextField(max_length=2000)
+    public = models.BooleanField(default=False)
     people = models.ManyToManyField(AppUser, related_name='contests')
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()

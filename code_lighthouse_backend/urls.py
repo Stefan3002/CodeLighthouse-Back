@@ -24,6 +24,8 @@ urlpatterns = [
     path('reports', reports_views.GetReports.as_view()),
     path('announcements-delete/<int:announcement_id>', views.Announcements.as_view()),
     path('announcements', views.Announcements.as_view()),
+    path('create-contest', views.Contests.as_view()),
+
     path('reports/<int:id>', reports_views.GetReports.as_view()),
     path('submissions/<int:assignment_id>', views.GetAssignmentSubmissionsView.as_view()),
     path('challenges/<slug:slug>/comments', views.CommentsView.as_view()),

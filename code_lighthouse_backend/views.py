@@ -1,8 +1,10 @@
 import datetime
 import sys
 import traceback
-from llama_cpp import Llama
+import uuid
 
+from llama_cpp import Llama
+import csv
 import firebase_admin
 import jwt
 from django.core.files import File
@@ -26,7 +28,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from code_lighthouse_backend.email_sending.messages import new_announcement_message, format_new_announcement_email
 from code_lighthouse_backend.email_sending.send_emails import send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, \
-    Announcement, Notification, Log
+    Announcement, Notification, Log, Contest
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer, AppUserPublicSerializer
@@ -297,7 +299,75 @@ class Announcements(APIView):
         except Exception as e:
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class Contests(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
+    def post(self, request):
+        try:
+            data = request.data
+            # lighthouse_id = data['lighthouseId']
+            # content = data['content']
+            files = data['files']
+            name = data['name']
+            description = data['description']
+            public_contest = data['publicContest']
+
+            public_contest = False if public_contest == 'false' else True
+
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if not logged_in_user.admin_user:
+                return Response({'OK': False, 'data': 'You are no admin!'},
+                                status=status.HTTP_403_FORBIDDEN)
+
+            if files == 'undefined':
+                files = None
+
+            # if announcement_content_validator["inputNull"] is False and (not content or len(content) == 0):
+            #     return Response({'OK': False, 'data': 'Announcement is missing!'},
+            #                     status=status.HTTP_400_BAD_REQUEST)
+            #
+            # if len(content) < announcement_content_validator["inputMin"]:
+            #     return Response({'OK': False, 'data': 'Announcement is too short!'},
+            #                     status=status.HTTP_400_BAD_REQUEST)
+
+            if len(description.strip()) < 15:
+                return Response({"data": 'Too short description!'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+            new_contest = Contest(author=logged_in_user, description=description, public=public_contest, name=name)
+            new_contest.save()
+
+            if not public_contest:
+            #     Generate accounts for the people in the private contest!
+                print(files)
+                file_data = files.read().decode('utf-8', errors='ignore')
+
+                for line in file_data.split('\n'):
+                    elements = line.split(',')
+                    name1 = elements[0].strip()
+                    name2 = elements[1].strip()
+                    username = name1 + '_' + name2
+                    password = uuid.uuid4()[:10]
+                    new_user = AppUser(password=password, username=username)
+                    new_user.save()
+                    new_contest.people.add(new_user)
+                    new_contest.save()
+
+
+            # new_contest.save()
+
+            # Send E-mails.
+            # for receiver in lighthouse.people.all():
+            #     format_new_announcement_email(receiver.username, lighthouse.name, content)
+            #     send_email(receiver_email=receiver.email, message=new_announcement_message)
+
+            return Response({"data": 'Successfully created!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class Notifications(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
