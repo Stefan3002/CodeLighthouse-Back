@@ -40,6 +40,9 @@ urlpatterns = [
     path('notifications-all', views.NotificationsAll.as_view()),
     path('logs', views.Logs.as_view()),
 
+    path('challenge-stats/<slug:slug>', challenges_views.getChallengeStats.as_view()),
+
+
     path('file/<str:file_name>/<int:lighthouse_id>', views.ViewFile.as_view()),
 
     path('lighthouses/<int:lighthouseID>', lighthouse_views.GetLighthouse.as_view()),

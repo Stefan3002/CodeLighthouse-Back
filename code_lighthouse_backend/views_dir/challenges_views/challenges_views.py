@@ -9,7 +9,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from code_lighthouse_backend.email_sending.messages import format_new_admin_email, new_admin_message
 from code_lighthouse_backend.email_sending.send_emails import send_email_async, send_email
-from code_lighthouse_backend.models import Challenge, AppUser, Code, Reports
+from code_lighthouse_backend.models import Challenge, AppUser, Code, Reports, Like
 from code_lighthouse_backend.serializers import ChallengeSerializer
 from code_lighthouse_backend.utils import get_request_user_id
 
@@ -235,6 +235,27 @@ class AdminGetDeniedChallenges(APIView):
 
             challenges = Challenge.objects.filter(Q(public=False) & Q(private=False) & Q(denied=True))
             return Response(ChallengeSerializer(challenges, many=True).data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class getChallengeStats(APIView):
+    def get(self, request, slug):
+        try:
+
+            challenge = Challenge.objects.get(slug=slug)
+            if not challenge:
+                return Response({'data': 'No such challenge!'}, status=status.HTTP_404_NOT_FOUND)
+
+            likes = Like.objects.filter(challenge=challenge)
+
+            return Response({
+                "data": {
+                    "solved": challenge.solved,
+                    "attempts": challenge.attempts,
+                    "likes": len(likes)
+                }
+            }, status=status.HTTP_200_OK)
+
         except Exception as e:
             return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
