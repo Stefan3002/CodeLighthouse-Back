@@ -418,6 +418,46 @@ class Contests(APIView):
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ChallengeContest(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        try:
+            data = request.data
+            challengeSlug = data['selectedChallenge']
+
+
+            challenge = Challenge.objects.get(slug=challengeSlug)
+            contest = Contest.objects.get(id=id)
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if not logged_in_user.admin_user:
+                return Response({'OK': False, 'data': 'You are no admin!'},
+                                status=status.HTTP_403_FORBIDDEN)
+            if logged_in_user != contest.author:
+                return Response({'OK': False, 'data': 'You are not the author of this contest!'},
+                                status=status.HTTP_403_FORBIDDEN)
+
+
+            contest.challenges.add(challenge)
+            contest.save()
+
+            # if announcement_content_validator["inputNull"] is False and (not content or len(content) == 0):
+            #     return Response({'OK': False, 'data': 'Announcement is missing!'},
+            #                     status=status.HTTP_400_BAD_REQUEST)
+            #
+            # if len(content) < announcement_content_validator["inputMin"]:
+            #     return Response({'OK': False, 'data': 'Announcement is too short!'},
+            #                     status=status.HTTP_400_BAD_REQUEST)
+
+
+            return Response({"data": 'Successfully added!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class Notifications(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]

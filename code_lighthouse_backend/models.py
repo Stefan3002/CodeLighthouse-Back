@@ -120,6 +120,7 @@ class Contest(models.Model):
     end_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
+    challenges = models.ManyToManyField(Challenge, default=None, null=True,related_name='contests_featured_in')
 
 class Reports(models.Model):
     reason = models.CharField(max_length=30)
