@@ -1,3 +1,4 @@
+import hashlib
 
 from firebase_admin import auth
 from rest_framework import status
@@ -49,8 +50,8 @@ class Auth(APIView):
             email = request.data['email']
             password = request.data['password']
             user = AppUser.objects.filter(email=email)[0]
-            print(password, user.password)
-            if user.password.strip() != '' and user.password == password:
+            # print(password, user.password)
+            if user.password.strip() != '' and user.password == hashlib.sha256(password.encode('UTF-8')).hexdigest():
 
                 serialized_user = AppUserSerializer(user, context={'drill': True})
                 refresh = RefreshToken.for_user(user)

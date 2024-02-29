@@ -2,7 +2,7 @@ from django.db.models import Q
 from rest_framework import serializers
 
 from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment, Comment, Like, Code, Submission, \
-    Reports, Announcement, Notification, Log
+    Reports, Announcement, Notification, Log, Contest
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -202,6 +202,11 @@ class LikeSerializer(serializers.ModelSerializer):
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
+        fields = '__all__'
+
+class ContestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contest
         fields = '__all__'
 
 class AppUserPublicSerializer(serializers.ModelSerializer):

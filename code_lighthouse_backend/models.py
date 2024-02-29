@@ -116,10 +116,10 @@ class Contest(models.Model):
     description = models.TextField(max_length=2000)
     public = models.BooleanField(default=False)
     people = models.ManyToManyField(AppUser, related_name='contests')
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    start_date = models.DateField()
+    end_date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
 
 class Reports(models.Model):
     reason = models.CharField(max_length=30)

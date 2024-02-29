@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Comment, Like, Code, Submission, \
-    Reports, Announcement, Notification, Log
+    Reports, Announcement, Notification, Log, Contest
 
 # Register your models here.
 
@@ -17,3 +17,4 @@ admin.site.register(Reports)
 admin.site.register(Announcement)
 admin.site.register(Notification)
 admin.site.register(Log)
+admin.site.register(Contest)
