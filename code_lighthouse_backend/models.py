@@ -122,6 +122,9 @@ class Contest(models.Model):
     end_time = models.TimeField()
     challenges = models.ManyToManyField(Challenge, default=None, null=True,related_name='contests_featured_in')
 
+    def __str__(self):
+        return f'{self.name}'
+
 class Reports(models.Model):
     reason = models.CharField(max_length=30)
     comment = models.TextField(max_length=1000, null=True)

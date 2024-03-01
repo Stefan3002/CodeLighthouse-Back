@@ -49,7 +49,10 @@ class Auth(APIView):
         try:
             email = request.data['email']
             password = request.data['password']
-            user = AppUser.objects.filter(email=email)[0]
+            try:
+                user = AppUser.objects.get(email=email)
+            except AppUser.DoesNotExist:
+                user = AppUser.objects.get(username=email)
             # print(password, user.password)
             if user.password.strip() != '' and user.password == hashlib.sha256(password.encode('UTF-8')).hexdigest():
 
@@ -60,6 +63,7 @@ class Auth(APIView):
                     'refresh': str(refresh),
                     'access': str(refresh.access_token)
                 }
+                #
                 return Response(user_and_token, status=status.HTTP_200_OK)
             else:
                 if user.password.strip() == '':

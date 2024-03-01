@@ -115,8 +115,13 @@ class GetChallenge(APIView):
             if challenge.private:
                 if challenge not in logged_in_user.authored_challenges.all():
                     found = False
+                    # Check in assignments
                     for assignment in logged_in_user.assignments.all():
                         if challenge == assignment.challenge:
+                            found = True
+                    # Check in contests
+                    for contest in logged_in_user.contests.all():
+                        if challenge in contest.challenges.all():
                             found = True
                     if not found:
                         return Response({"data": "This is a private challenge!"}, status=status.HTTP_403_FORBIDDEN)

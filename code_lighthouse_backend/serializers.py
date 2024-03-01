@@ -210,9 +210,13 @@ class ContestSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     challenges = serializers.SerializerMethodField()
+    people = serializers.SerializerMethodField()
     def get_challenges(self, contest):
         challenges = contest.challenges.all()
         return ChallengeSerializer(challenges, many=True).data
+    def get_people(self, contest):
+        people = contest.people.all()
+        return AppUserSerializer(people, many=True).data
 
 class AppUserPublicSerializer(serializers.ModelSerializer):
     class Meta:
