@@ -515,6 +515,37 @@ class ContestSubmissions(APIView):
         except Exception as e:
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+class ContestSummary(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, contestID):
+        try:
+            contest = Contest.objects.get(id=contestID)
+            data = request.data
+            userID = data['userID']
+
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            user = AppUser.objects.get(id=userID)
+            if logged_in_user == contest.author:
+                submissions = user.submissions.filter(Q(challenge__in=contest.challenges.all()) & Q(date__gte=contest.start_date) & Q(time__gte=contest.start_time) & Q(date__lte=contest.end_date) & Q(time__lte=contest.end_time))
+
+                summary = {}
+                # print(summary)
+                for submission in submissions.all():
+                    if not summary.get(submission.challenge.slug):
+                        summary[submission.challenge.slug] = 9999999
+
+                    summary[submission.challenge.slug] = min(summary.get(submission.challenge.slug), round(submission.exec_time, 5))
+                return Response(summary, status=status.HTTP_200_OK)
+            else:
+                return Response({'OK': False, 'data': 'You are not the owner of the Contest!'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class ChallengeContest(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
