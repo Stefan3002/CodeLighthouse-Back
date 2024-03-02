@@ -47,7 +47,8 @@ urlpatterns = [
     path('logs', views.Logs.as_view()),
 
     path('challenge-stats/<slug:slug>', challenges_views.getChallengeStats.as_view()),
-
+    path('contest-reset-password/<int:contestID>', views.ContestResetPassword.as_view()),
+    path('contest-reset-email/<int:contestID>', views.ContestResetEmail.as_view()),
 
     path('file/<str:file_name>/<int:lighthouse_id>', views.ViewFile.as_view()),
 
