@@ -52,6 +52,7 @@ urlpatterns = [
     path('contest-reset-email/<int:contestID>', views.ContestResetEmail.as_view()),
     path('contest-get-submissions/<int:contestID>', views.ContestSubmissions.as_view()),
     path('contest-participant-summary/<int:contestID>', views.ContestSummary.as_view()),
+    path('contest-challenge-leaderboard/<int:contestID>/<slug:challengeSlug>', views.ContestChallengeLeaderboard.as_view()),
 
     path('file/<str:file_name>/<int:lighthouse_id>', views.ViewFile.as_view()),
 

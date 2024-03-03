@@ -546,6 +546,22 @@ class ContestSummary(APIView):
         except Exception as e:
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+
+class ContestChallengeLeaderboard(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, contestID, challengeSlug):
+        try:
+            contest = Contest.objects.get(id=contestID)
+            challenge = Challenge.objects.get(slug=challengeSlug)
+            submissions = challenge.challenge_submissions.filter(Q(date__gte=contest.start_date) & Q(time__gte=contest.start_time) & Q(date__lte=contest.end_date) & Q(time__lte=contest.end_time)).order_by('exec_time')
+            print(submissions)
+            return Response(SubmissionSerializer(submissions, many=True).data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class ChallengeContest(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
