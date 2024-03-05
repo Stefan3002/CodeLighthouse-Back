@@ -52,7 +52,13 @@ class GetReports(APIView):
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
 
-            reports = Reports.objects.filter(Q(closed=False))
+            mode = request.GET.get('type')
+
+            if mode == 'open':
+                reports = Reports.objects.filter(Q(closed=False))
+            else:
+                if mode == 'closed':
+                    reports = Reports.objects.filter(Q(closed=True))
 
             return Response(ReportSerializer(reports, many=True).data, status=status.HTTP_200_OK)
 
