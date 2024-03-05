@@ -30,7 +30,7 @@ from code_lighthouse_backend.email_sending.messages import new_announcement_mess
     format_new_account_email, new_account_message
 from code_lighthouse_backend.email_sending.send_emails import send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, \
-    Announcement, Notification, Log, Contest
+    Announcement, Notification, Log, Contest, Reports, Submission
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer, AppUserPublicSerializer, ContestSerializer
@@ -847,3 +847,84 @@ class GetUser(APIView):
                 return Response(serialized_user.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PurgeAccount(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            data = request.data
+            user_id = data['userID']
+
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            target_account = AppUser.objects.get(user_id=user_id)
+
+            if logged_in_user != target_account:
+                return Response({'OK': False, 'data': 'Hey there! You do not own this account that are requesting to delete!'}, status=status.HTTP_403_FORBIDDEN)
+
+            with transaction.atomic():
+                try:
+                    anonymous_user = AppUser.objects.get(username='CodeLighthhouse - Anonymous')
+                except AppUser.DoesNotExist:
+                    anonymous_user = AppUser(email='null@gmail.com', username='CodeLighthhouse - Anonymous')
+                    anonymous_user.save()
+
+                challenges = Challenge.objects.filter(author=target_account)
+                for challenge in challenges:
+                    challenge.author = anonymous_user
+                    challenge.save()
+
+                lighthouses = Lighthouse.objects.filter(author=target_account)
+                for lighthouse in lighthouses:
+                    lighthouse.author = anonymous_user
+                    lighthouse.save()
+
+                comments = Comment.objects.filter(author=target_account)
+                for comment in comments:
+                    comment.author = anonymous_user
+                    comment.save()
+
+                notifications = Notification.objects.filter(user=target_account)
+                for notification in notifications:
+                    notification.user = anonymous_user
+                    notification.save()
+
+                logs = Log.objects.filter(author=target_account)
+                for log in logs:
+                    log.author = anonymous_user
+                    log.save()
+
+                contests = Contest.objects.filter(author=target_account)
+                for contest in contests:
+                    contest.author = anonymous_user
+                    contest.save()
+
+                reports = Reports.objects.filter(author=target_account)
+                for reports in reports:
+                    reports.author = anonymous_user
+                    reports.save()
+
+                announcements = Announcement.objects.filter(author=target_account)
+                for announcement in announcements:
+                    announcement.author = anonymous_user
+                    announcement.save()
+
+                likes = Like.objects.filter(user=target_account)
+                for like in likes:
+                    like.user = anonymous_user
+                    like.save()
+
+                submissions = Submission.objects.filter(user=target_account)
+                for submission in submissions:
+                    submission.user = anonymous_user
+                    submission.save()
+
+                target_account.delete()
+
+                return Response({'OK': True, 'data': 'Account purged!'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
