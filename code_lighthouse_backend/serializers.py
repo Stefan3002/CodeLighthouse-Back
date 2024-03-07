@@ -159,6 +159,17 @@ class LighthousePreviewSerializer(serializers.ModelSerializer):
         author = lighthouse.author
         return AppUserSerializer(author).data
 
+class ContestPreviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contest
+        fields = ['name', 'author', 'id']
+
+    author = serializers.SerializerMethodField()
+
+    def get_author(self, contest):
+        author = contest.author
+        return AppUserSerializer(author).data
+
 
 class LighthouseAssignmentSerializer(serializers.ModelSerializer):
     class Meta:

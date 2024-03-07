@@ -120,6 +120,7 @@ class Contest(models.Model):
     end_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
+    enrollment_code = models.UUIDField(default=uuid.uuid4, editable=True)
     challenges = models.ManyToManyField(Challenge, default=None, null=True,related_name='contests_featured_in')
 
     def __str__(self):

@@ -61,7 +61,7 @@ urlpatterns = [
 
     path('lighthouses/<int:lighthouseID>', lighthouse_views.GetLighthouse.as_view()),
     path('lighthouses-enroll-change/<int:lighthouseID>', lighthouse_views.ChangeEnrollLighthouse.as_view()),
-    path('lighthouses-preview/<int:lighthouseID>', lighthouse_views.GetLighthousePreview.as_view()),
+    path('content-preview', lighthouse_views.GetLighthousePreview.as_view()),
 
     path('assignments/<int:lighthouseID>', views.Assignments.as_view()),
     path('create-lighthouses', lighthouse_views.CreateLighthouse.as_view()),
