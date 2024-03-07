@@ -208,12 +208,18 @@ class RandomChallenge(View):
         return HttpResponse(serialized_challenge, content_type='application/json')
 
 
-class Communities(APIView):
+class PublicEntities(APIView):
     def get(self, request):
         try:
-            communities = Lighthouse.objects.filter(public=True)
-            serialized_lighthouses = LighthouseSerializer(communities, many=True)
-            return Response(serialized_lighthouses.data, status=status.HTTP_200_OK)
+            mode = request.GET.get('type')
+            if mode == 'lighthouse':
+                communities = Lighthouse.objects.filter(public=True)
+                serialized_lighthouses = LighthouseSerializer(communities, many=True)
+                return Response(serialized_lighthouses.data, status=status.HTTP_200_OK)
+            if mode == 'contest':
+                communities = Contest.objects.filter(public=True)
+                serialized_contests = ContestSerializer(communities, many=True)
+                return Response(serialized_contests.data, status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

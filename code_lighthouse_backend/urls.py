@@ -20,7 +20,7 @@ urlpatterns = [
     path('random-challenge', views.RandomChallenge.as_view()),
     path('like/<slug:slug>', views.LikeView.as_view()),
     path('challenges', challenges_views.PostChallenge.as_view()),
-    path('communities', views.Communities.as_view()),
+    path('public-entities', views.PublicEntities.as_view()),
     path('reports', reports_views.GetReports.as_view()),
     path('announcements-delete/<int:announcement_id>', views.Announcements.as_view()),
     path('announcements', views.Announcements.as_view()),
@@ -59,7 +59,7 @@ urlpatterns = [
 
     path('file/<str:file_name>/<int:lighthouse_id>', views.ViewFile.as_view()),
 
-    path('lighthouses/<int:lighthouseID>', lighthouse_views.GetLighthouse.as_view()),
+    path('entities/<int:lighthouseID>', lighthouse_views.GetEntity.as_view()),
     path('lighthouses-enroll-change/<int:lighthouseID>', lighthouse_views.ChangeEnrollLighthouse.as_view()),
     path('content-preview', lighthouse_views.GetLighthousePreview.as_view()),
 

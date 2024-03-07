@@ -60,7 +60,7 @@ class ChangeEnrollLighthouse(APIView):
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class GetLighthouse(APIView):
+class GetEntity(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
