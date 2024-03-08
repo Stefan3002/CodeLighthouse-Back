@@ -30,6 +30,8 @@ urlpatterns = [
     path('contests/<int:id>', views.GetContest.as_view()),
     path('challenge-contest/<int:id>', views.ChallengeContest.as_view()),
 
+    path('check-captcha', views.Captcha.as_view()),
+
     path('reports/<int:id>', reports_views.GetReports.as_view()),
     path('submissions/<int:assignment_id>', views.GetAssignmentSubmissionsView.as_view()),
     path('challenges/<slug:slug>/comments', views.CommentsView.as_view()),

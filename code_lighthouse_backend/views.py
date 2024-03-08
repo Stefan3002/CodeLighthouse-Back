@@ -3,7 +3,7 @@ import hashlib
 import sys
 import traceback
 import uuid
-
+import requests
 from llama_cpp import Llama
 import csv
 import firebase_admin
@@ -973,3 +973,25 @@ class PurgeAccount(APIView):
                 return Response({'OK': True, 'data': 'Account purged!'}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'OK': False, 'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class Captcha(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            decoded_user_id = get_request_user_id(request)
+
+            data = request.data
+            token = data['token']
+
+
+            score = requests.post('https://www.google.com/recaptcha/api/siteverify', {
+                'response': token,
+                'secret': os.environ['CAPTCHA_KEY']
+            })
+            print(score.json())
+            return Response({'OK': True, 'data': score.json()}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
