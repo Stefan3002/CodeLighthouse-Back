@@ -196,6 +196,45 @@ class CommentsView(APIView):
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def put(self, request, slug):
+        try:
+            data = request.data
+            id = data['commentID']
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            comment = Comment.objects.get(id=id)
+
+            if logged_in_user != comment.author:
+                return Response({"data": 'You are not the owner of this comment'}, status=status.HTTP_403_FORBIDDEN)
+
+            content = request.data['content']
+
+
+            comment.content = content
+            comment.save()
+            return Response({"data": 'Successfully saved!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def delete(self, request, slug):
+        try:
+            data = request.data
+            id = data['commentID']
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            comment = Comment.objects.get(id=id)
+
+            if logged_in_user != comment.author:
+                return Response({"data": 'You are not the owner of this comment'}, status=status.HTTP_403_FORBIDDEN)
+            comment.delete()
+            return Response({"data": 'Successfully deleted!'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 
 class RandomChallenge(View):

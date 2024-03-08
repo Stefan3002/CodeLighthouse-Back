@@ -60,6 +60,7 @@ urlpatterns = [
     path('file/<str:file_name>/<int:lighthouse_id>', views.ViewFile.as_view()),
 
     path('entities/<int:lighthouseID>', lighthouse_views.GetEntity.as_view()),
+    path('lighthouses/<int:lighthouseID>', lighthouse_views.GetEntity.as_view()),
     path('lighthouses-enroll-change/<int:lighthouseID>', lighthouse_views.ChangeEnrollLighthouse.as_view()),
     path('content-preview', lighthouse_views.GetLighthousePreview.as_view()),
 
