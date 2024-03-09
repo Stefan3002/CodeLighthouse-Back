@@ -76,28 +76,32 @@ def load_balance_report_admins():
 
 
 
-class ChallengeReport(APIView):
+class EntityReport(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     def post(self, request, slug):
         try:
             data = request.data
             reason = data['reason']
-            comment = None
+            comment = data['comments']
 
-            if reason == 'description':
-                comment = data['comments']
+            if reason == 'challenge-description':
                 read_code_of_conduct = data['readCodeofConduct']
                 if not read_code_of_conduct:
                     return Response({'data': 'You must read the Code of Conduct'}, status=status.HTTP_403_FORBIDDEN)
                 if not comment or len(comment.strip()) == 0:
-                    return Response({'data': 'You must explain why you reported this challenge.'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'data': 'You must explain why you reported this.'}, status=status.HTTP_400_BAD_REQUEST)
                 if len(comment.strip()) < 15:
-                    return Response({'data': 'Please be more explicit when saying why reported this challenge!'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'data': 'Please be more explicit when saying why reported this!'}, status=status.HTTP_400_BAD_REQUEST)
                 if len(comment.strip()) > 1000:
-                    return Response({'data': 'Please shorten your reason for reporting the challenge.'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'data': 'Please shorten your reason for reporting.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            challenge = Challenge.objects.get(slug=slug)
+            mode = request.GET.get('type')
+            if mode == 'challenge-description':
+                entity = Challenge.objects.get(slug=slug)
+            elif mode == 'comment':
+                entity = Comment.objects.get(id=slug)
+
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
 
@@ -108,7 +112,7 @@ class ChallengeReport(APIView):
             assigned_admin = load_balance_report_admins()
 
 
-            new_report = Reports(author=logged_in_user, comment=comment, reason=reason, assigned_admin=assigned_admin, challenge=challenge)
+            new_report = Reports(author=logged_in_user, comment=comment, reason=reason, assigned_admin=assigned_admin, challenge=entity)
 
             new_report.save()
             return Response({'data': 'Report has been submitted and already assigned to an admin.'}, status=status.HTTP_201_CREATED)
