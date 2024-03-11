@@ -849,6 +849,7 @@ class Assignments(APIView):
             challenge_slug = request.data['selectedChallenge']
             due_date = request.data['dueDate']
             due_time = request.data['dueTime']
+            description = request.data['description']
             users = request.data['users']
 
             lighthouse = Lighthouse.objects.get(id=lighthouseID)
@@ -858,7 +859,7 @@ class Assignments(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
 
             challenge = Challenge.objects.get(slug=challenge_slug)
-            new_assignment = Assignment(due_date=due_date, due_time=due_time, challenge=challenge,
+            new_assignment = Assignment(description=description, due_date=due_date, due_time=due_time, challenge=challenge,
                                         lighthouse=lighthouse)
 
             new_assignment.save()
