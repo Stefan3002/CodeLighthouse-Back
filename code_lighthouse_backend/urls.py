@@ -33,7 +33,10 @@ urlpatterns = [
     path('check-captcha', views.Captcha.as_view()),
 
     path('reports/<int:id>', reports_views.GetReports.as_view()),
+
     path('submissions/<int:assignment_id>', views.GetAssignmentSubmissionsView.as_view()),
+    path('grade-submissions/<int:assignment_id>', views.GradeAssignmentSubmissionsView.as_view()),
+
     path('challenges/<slug:slug>/comments', views.CommentsView.as_view()),
     path('challenges/<slug:slug>', challenges_views.GetChallenge.as_view()),
     path('admin-denied', challenges_views.AdminGetDeniedChallenges.as_view()),

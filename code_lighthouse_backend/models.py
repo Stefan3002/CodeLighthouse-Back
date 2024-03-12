@@ -159,6 +159,10 @@ class Assignment(models.Model):
     def __str__(self):
         return f'{self.lighthouse_id} - {self.challenge} - {self.due_date}'
 
+class Grade(models.Model):
+    assignment = models.ForeignKey(Assignment, related_name='grades', on_delete=models.DO_NOTHING)
+    user = models.ForeignKey(AppUser, related_name='grades', on_delete=models.DO_NOTHING)
+    grade = models.SmallIntegerField()
 
 class Like(models.Model):
     user = models.ForeignKey(AppUser, on_delete=models.SET_NULL, related_name='liked_challenges', null=True)

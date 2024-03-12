@@ -30,7 +30,7 @@ from code_lighthouse_backend.email_sending.messages import new_announcement_mess
     format_new_account_email, new_account_message
 from code_lighthouse_backend.email_sending.send_emails import send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, \
-    Announcement, Notification, Log, Contest, Reports, Submission
+    Announcement, Notification, Log, Contest, Reports, Submission, Grade
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer, AppUserPublicSerializer, ContestSerializer
@@ -165,14 +165,60 @@ class GetAssignmentSubmissionsView(APIView):
 
             returned_submissions = {}
 
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if logged_in_user != assignment.lighthouse.author:
+                return Response({"data": 'You are not the owner of this lighthouse'}, status=status.HTTP_403_FORBIDDEN)
+
+
             for submission in submissions:
                 if submission.user in users:
                     username = submission.user.username
                     data = (returned_submissions.get(username, []))
                     data.append(SubmissionSerializer(submission).data)
+                    try:
+                        grade = Grade.objects.get(Q(user=submission.user) & Q(assignment=assignment))
+                        data.append(grade.grade)
+                    except Grade.DoesNotExist:
+                        data.append('')
+
                     returned_submissions[username] = data
 
             return Response(returned_submissions, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class GradeAssignmentSubmissionsView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, assignment_id):
+        try:
+
+            data = request.data
+            grade = data['grade']
+            user_id = data['authorID']
+
+            assignment = Assignment.objects.get(id=assignment_id)
+
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if logged_in_user != assignment.lighthouse.author:
+                return Response({"data": 'You are not the owner of this lighthouse'}, status=status.HTTP_403_FORBIDDEN)
+
+            try:
+                old_grade = Grade.objects.get(Q(assignment=assignment) & Q(user=user_id))
+                old_grade.grade = grade
+                old_grade.save()
+            except Grade.DoesNotExist:
+                new_grade = Grade(grade=grade, assignment=assignment, user_id=user_id)
+                new_grade.save()
+            return Response({"data": 'Successfully saved!'}, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
