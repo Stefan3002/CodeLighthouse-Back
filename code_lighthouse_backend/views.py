@@ -33,7 +33,7 @@ from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assig
     Announcement, Notification, Log, Contest, Reports, Submission, Grade
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
-    SubmissionSerializer, AppUserPublicSerializer, ContestSerializer
+    SubmissionSerializer, AppUserPublicSerializer, ContestSerializer, AssignmentSerializer
 from code_lighthouse_backend.utils import retrieve_token, retrieve_secret, get_request_user_id
 
 import firebase_admin
@@ -915,6 +915,21 @@ class Assignments(APIView):
                 new_assignment.users.add(user)
 
             return Response({'data': 'Success!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get(self, request, lighthouseID):
+        try:
+            # LighthouseID is the assignment ID here
+            assignment = Assignment.objects.get(id=lighthouseID)
+            users = assignment.lighthouse.people
+            decoded_user_id = get_request_user_id(request)
+            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+            if logged_in_user not in users.all():
+                return Response({'data': 'You did not receive this assignment'}, status=status.HTTP_403_FORBIDDEN)
+
+            return Response(AssignmentSerializer(assignment).data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

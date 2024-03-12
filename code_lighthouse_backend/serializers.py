@@ -65,7 +65,10 @@ class CodeSerializer(serializers.ModelSerializer):
         model = Code
         fields = '__all__'
 
-
+class AssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assignment
+        fields = '__all__'
 class SubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Submission
@@ -174,7 +177,7 @@ class ContestPreviewSerializer(serializers.ModelSerializer):
 class LighthouseAssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lighthouse
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'author']
 
 class LighthouseSerializer(serializers.ModelSerializer):
     class Meta:
