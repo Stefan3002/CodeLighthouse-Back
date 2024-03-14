@@ -258,6 +258,7 @@ class CommentsView(APIView):
 
 
             comment.content = content
+            comment.modified = True
             comment.save()
             return Response({"data": 'Successfully saved!'}, status=status.HTTP_201_CREATED)
         except Exception as e:

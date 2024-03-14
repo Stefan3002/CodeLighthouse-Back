@@ -31,6 +31,7 @@ class AppUser(AbstractUser):
 
 
 class Comment(models.Model):
+    modified = models.BooleanField(default=False)
     content = models.TextField(max_length=1000)
     author = models.ForeignKey(AppUser, related_name='comments', on_delete=models.DO_NOTHING)
     # date = models.DateField(default=datetime.datetime.now)

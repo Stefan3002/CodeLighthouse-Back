@@ -10,7 +10,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ['content', 'id', 'author']
+        fields = ['content', 'id', 'author', 'modified']
 
     def get_author(self, comment):
         author = comment.author
