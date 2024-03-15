@@ -4,6 +4,7 @@ import sys
 import traceback
 import uuid
 import requests
+from celery import shared_task
 from llama_cpp import Llama
 import csv
 import firebase_admin
@@ -34,6 +35,7 @@ from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assig
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer, AppUserPublicSerializer, ContestSerializer, AssignmentSerializer
+from code_lighthouse_backend.tasks.tasks import send_email_celery, runPythonCodeCelery
 from code_lighthouse_backend.utils import retrieve_token, retrieve_secret, get_request_user_id
 
 import firebase_admin
@@ -49,16 +51,34 @@ cred = credentials.Certificate(
 firebase_admin.initialize_app(cred)
 
 
-def format_logs_for_html(logs):
-    html_logs = '<p>' + logs.replace('\n', '</p><p>')
-    html_logs = html_logs.replace('\t', '&nbsp;&nbsp;')
-    return html_logs
 
 
-def handle_code_error(e):
-    error_str = format_logs_for_html(str(e))
-    return Response({'OK': False, 'data': error_str}, status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content_type='text/plain')
+
+
+
+
+
+class Test(APIView):
+    def get(self, request):
+        result = send_email_celery.apply_async(args=[], kwargs=[])
+        print(result.id)
+        return Response({'result': result.ready()})
+
+class TaskPoll(APIView):
+    def get(self, request, task_id):
+        task = runPythonCodeCelery.AsyncResult(task_id)
+        task_status = task.ready()
+        if task_status:
+            print('aaa', task.get()['OK'])
+            if not task.get()['OK']:
+                return Response({'status': task_status, 'data': task.get()['data']}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'status': task_status, 'data': task.get()}, status=status.HTTP_200_OK)
+        else:
+            return Response({'status': task_status}, status=status.HTTP_200_OK)
+
+
+
 
 
 class RunUserCode(APIView):
@@ -74,35 +94,29 @@ class RunUserCode(APIView):
         soft_time_limit = data['timeLimit']
 
         if language == 'Python':
-            try:
-                results = runPythonCode(request, slug, 'full', '', soft_time_limit)
-                logs_str = results[0]
-                exec_time = results[1]
-                # Success!
-                logs_str = format_logs_for_html(logs_str)
-            except Exception as e:
-                return handle_code_error(e)
-
-            return Response({'OK': True, 'data': {'logs': logs_str, 'time': exec_time}}, status=status.HTTP_200_OK,
-                            content_type='text/plain')
-
-        elif language == 'Javascript':
-            try:
-                logs_str = runJavascriptCode(request, slug, 'full', '')
-                logs_str = format_logs_for_html(logs_str)
-            except Exception as e:
-                return handle_code_error(e)
-
-            return Response({'data': logs_str}, status=status.HTTP_200_OK)
-
-        elif language == 'Ruby':
-            try:
-                logs_str = runRubyCode(request, slug, 'full', '')
-                logs_str = format_logs_for_html(logs_str)
-            except Exception as e:
-                return handle_code_error(e)
-
-            return Response({'data': logs_str}, status=status.HTTP_200_OK)
+            print('aaaaa')
+            code = data['code']
+            user_id = data['userId']
+            task = runPythonCodeCelery.apply_async(args=[code, user_id, slug, 'full', '',  soft_time_limit], kwargs=[])
+            task_id = task.id
+        # elif language == 'Javascript':
+        #     try:
+        #         logs_str = runJavascriptCode(request, slug, 'full', '')
+        #         logs_str = format_logs_for_html(logs_str)
+        #     except Exception as e:
+        #         return handle_code_error(e)
+        #
+        #     return Response({'data': logs_str}, status=status.HTTP_200_OK)
+        #
+        # elif language == 'Ruby':
+        #     try:
+        #         logs_str = runRubyCode(request, slug, 'full', '')
+        #         logs_str = format_logs_for_html(logs_str)
+        #     except Exception as e:
+        #         return handle_code_error(e)
+        #
+            # return Response({'data': logs_str}, status=status.HTTP_200_OK)
+        return Response({'data': task_id}, status=status.HTTP_200_OK)
 
 
 class RunUserHardCode(APIView):
@@ -110,45 +124,38 @@ class RunUserHardCode(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, slug):
-
+        #         results = runPythonCode(request, slug, 'hard', custom_hard_tests)
         # print(jwt.decode(token, 'django-insecure-op_4k4#z)fnvu%8jw01#o*n*3@@8)l*s7kiogd4i400f+qakw0', algorithms=["HS256"]))
 
         data = request.data
         language = data['language']
         # soft_time_limit = data['timeLimit']
 
-        custom_hard_tests = data['hardTests']
-
         if language == 'Python':
-            try:
-                results = runPythonCode(request, slug, 'hard', custom_hard_tests)
-                logs_str = results[0]
-                exec_time = results[1]
-                # Success!
-                logs_str = format_logs_for_html(logs_str)
-            except Exception as e:
-                return handle_code_error(e)
-
-            return Response({'OK': True, 'data': {'logs': logs_str, 'time': exec_time}}, status=status.HTTP_200_OK,
-                            content_type='text/plain')
-
-        elif language == 'Javascript':
-            try:
-                logs_str = runJavascriptCode(request, slug, 'hard', custom_hard_tests)
-                logs_str = format_logs_for_html(logs_str)
-            except Exception as e:
-                return handle_code_error(e)
-
-            return Response({'data': logs_str}, status=status.HTTP_200_OK)
-
-        elif language == 'Ruby':
-            try:
-                logs_str = runRubyCode(request, slug, 'hard', custom_hard_tests)
-                logs_str = format_logs_for_html(logs_str)
-            except Exception as e:
-                return handle_code_error(e)
-
-            return Response({'data': logs_str}, status=status.HTTP_200_OK)
+            print('aaaaa')
+            code = data['code']
+            user_id = data['userId']
+            custom_hard_tests = data['hardTests']
+            task = runPythonCodeCelery.apply_async(args=[code, user_id, slug, 'hard',  custom_hard_tests], kwargs=[])
+            task_id = task.id
+        # elif language == 'Javascript':
+        #     try:
+        #         logs_str = runJavascriptCode(request, slug, 'full', '')
+        #         logs_str = format_logs_for_html(logs_str)
+        #     except Exception as e:
+        #         return handle_code_error(e)
+        #
+        #     return Response({'data': logs_str}, status=status.HTTP_200_OK)
+        #
+        # elif language == 'Ruby':
+        #     try:
+        #         logs_str = runRubyCode(request, slug, 'full', '')
+        #         logs_str = format_logs_for_html(logs_str)
+        #     except Exception as e:
+        #         return handle_code_error(e)
+        #
+        # return Response({'data': logs_str}, status=status.HTTP_200_OK)
+        return Response({'data': task_id}, status=status.HTTP_200_OK)
 
 
 class GetAssignmentSubmissionsView(APIView):

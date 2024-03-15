@@ -61,6 +61,16 @@ CRON_CLASSES = [
     "code_lighthouse_backend.cron.purge_denied_challenges.purge_denied_challenges_cron",
 ]
 
+
+# Celery settings
+# This format is because we set the namespace to 'CELERY' in the celery.py
+# So all settings of Celery are now uppercase and start with
+# CELERY_
+# This is to prevent overlaps with other Django settings
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',

@@ -13,6 +13,9 @@ urlpatterns = [
     # path('token', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
     # path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
 
+    path('test', views.Test.as_view()),
+    path('poll/<task_id>', views.TaskPoll.as_view()),
+
     path('run/<slug:slug>', views.RunUserCode.as_view()),
     path('run-hard/<slug:slug>', views.RunUserHardCode.as_view()),
     path('auth/provider', auth_views.AuthProvider.as_view()),

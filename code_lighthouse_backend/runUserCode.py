@@ -7,6 +7,7 @@ import uuid
 import dateparser
 
 import docker
+from celery import shared_task
 from django.db import transaction
 from django.db.models import Q
 
@@ -158,14 +159,14 @@ def create_files(code, true_solution, tests, custom_hard_tests, hard_tests, mode
         else:
             file4.write(hard_tests)
 
-def runPythonCode(request, slug, mode, custom_hard_tests, soft_time_limit = 6):
+def runPythonCode(code, user_id, slug, mode, custom_hard_tests, soft_time_limit=6):
     challenge = Challenge.objects.filter(slug=slug)[0]
     challenge_code = Code.objects.get(Q(challenge=challenge) & Q(language='Python'))
     true_solution = challenge_code.solution
     tests = challenge_code.random_tests
     hard_tests = challenge_code.hard_tests
-    code = request.data['code']
-    user_id = request.data['userId']
+    # code = request.data['code']
+    # user_id = request.data['userId']
     try:
         print('aaaaaaa', soft_time_limit)
 
