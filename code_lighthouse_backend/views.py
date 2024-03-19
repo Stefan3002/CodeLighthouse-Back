@@ -332,7 +332,9 @@ class PublicEntities(APIView):
         try:
             mode = request.GET.get('type')
             if mode == 'lighthouse':
-                communities = Lighthouse.objects.filter(public=True)
+                start_index = int(request.GET.get('start'))
+                end_index = int(request.GET.get('end'))
+                communities = Lighthouse.objects.filter(public=True)[start_index:end_index]
                 serialized_lighthouses = LighthouseSerializer(communities, many=True)
                 return Response(serialized_lighthouses.data, status=status.HTTP_200_OK)
             if mode == 'contest':
