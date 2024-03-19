@@ -28,7 +28,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from code_lighthouse_backend.email_sending.messages import new_announcement_message, format_new_announcement_email, \
-    format_new_account_email, new_account_message
+    format_new_account_email, new_account_message, format_new_grade_email, new_grade_message
 from code_lighthouse_backend.email_sending.send_emails import send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, \
     Announcement, Notification, Log, Contest, Reports, Submission, Grade
@@ -218,13 +218,24 @@ class GradeAssignmentSubmissionsView(APIView):
             if logged_in_user != assignment.lighthouse.author:
                 return Response({"data": 'You are not the owner of this lighthouse'}, status=status.HTTP_403_FORBIDDEN)
 
+            user=AppUser.objects.get(id=user_id)
+            print(user)
             try:
-                old_grade = Grade.objects.get(Q(assignment=assignment) & Q(user=user_id))
-                old_grade.grade = grade
-                old_grade.save()
+                with transaction.atomic():
+                    old_grade = Grade.objects.get(Q(assignment=assignment) & Q(user=user_id))
+                    old_grade.grade = grade
+                    old_grade.save()
+                    #     Send e-mail
+                    format_new_grade_email(user.username, assignment.lighthouse.name, grade, assignment.title, '')
+                    send_email(receiver_email=user.email, message=new_grade_message)
             except Grade.DoesNotExist:
-                new_grade = Grade(grade=grade, assignment=assignment, user_id=user_id)
-                new_grade.save()
+                with transaction.atomic():
+                    new_grade = Grade(grade=grade, assignment=assignment, user_id=user_id)
+                    new_grade.save()
+                #     Send e-mail
+                    format_new_grade_email(user.username, assignment.lighthouse.name, grade, assignment.title, '')
+                    send_email(receiver_email=user.email, message=new_grade_message)
+
             return Response({"data": 'Successfully saved!'}, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)
@@ -904,6 +915,7 @@ class Assignments(APIView):
             due_date = request.data['dueDate']
             due_time = request.data['dueTime']
             description = request.data['description']
+            title = request.data['title']
             users = request.data['users']
 
             lighthouse = Lighthouse.objects.get(id=lighthouseID)
@@ -913,7 +925,7 @@ class Assignments(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
 
             challenge = Challenge.objects.get(slug=challenge_slug)
-            new_assignment = Assignment(description=description, due_date=due_date, due_time=due_time, challenge=challenge,
+            new_assignment = Assignment(title=title, description=description, due_date=due_date, due_time=due_time, challenge=challenge,
                                         lighthouse=lighthouse)
 
             new_assignment.save()

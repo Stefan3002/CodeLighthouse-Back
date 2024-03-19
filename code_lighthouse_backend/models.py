@@ -152,6 +152,7 @@ class Assignment(models.Model):
     due_date = models.DateField()
     due_time = models.TimeField()
     description = models.TextField(max_length=4000, default='')
+    title = models.CharField(max_length=100, default='')
     lighthouse = models.ForeignKey(Lighthouse, related_name='featured_in', on_delete=models.DO_NOTHING, null=True)
     challenge = models.ForeignKey(Challenge, related_name='featured_in', on_delete=models.DO_NOTHING, null=True)
     users = models.ManyToManyField(AppUser, related_name='assignments')

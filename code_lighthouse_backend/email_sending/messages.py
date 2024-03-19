@@ -3,6 +3,34 @@ from email.mime.text import MIMEText
 
 sender_email = 'secrieru2302@gmail.com'
 
+
+new_grade_message = MIMEMultipart("alternative")
+new_grade_message["Subject"] = "New Grade - CodeLighthouse"
+
+def format_new_grade_email(username, lighthouse_name, grade, assignment_title, content):
+    html = f"""\
+    <html>
+      <body>
+        <p>
+        Hi, <b>{username}</b> <br />
+        You have received a new grade: <b><i>{grade}</i></b>.<br />
+        Details: <br /> {assignment_title} in {lighthouse_name}.
+        </p>
+        <p>
+        {content}
+        </p>
+      </body>
+    </html>
+    """
+
+    # Turn these into plain/html MIMEText objects
+    part = MIMEText(html, "html")
+
+    # Add HTML/plain-text parts to MIMEMultipart message
+    # The email client will try to render the last part first
+    new_grade_message.attach(part)
+
+
 new_announcement_message = MIMEMultipart("alternative")
 new_announcement_message["Subject"] = "New Announcement in Lighthouse - CodeLighthouse"
 # new_announcement_message["From"] = sender_email

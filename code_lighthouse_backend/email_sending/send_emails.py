@@ -22,10 +22,9 @@ sender_email = 'secrieru2302@gmail.com'
 
 async def send_email_async(receiver_email, message):
     try:
-        async with aiohttp.ClientSession() as session:
-            with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
-                server.login(sender_email, password)
-                server.sendmail(sender_email, receiver_email, message.as_string())
+        with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver_email, message.as_string())
     except Exception as e:
         print(e)
 
