@@ -22,7 +22,7 @@ urlpatterns = [
     path('auth', auth_views.Auth.as_view()),
     path('random-challenge', views.RandomChallenge.as_view()),
     path('like/<slug:slug>', views.LikeView.as_view()),
-    path('challenges', challenges_views.PostChallenge.as_view()),
+
     path('public-entities', views.PublicEntities.as_view()),
     path('reports', reports_views.GetReports.as_view()),
     path('announcements-delete/<int:announcement_id>', views.Announcements.as_view()),
@@ -47,7 +47,7 @@ urlpatterns = [
     path('chat-bot', views.ChatBot.as_view()),
     path('challenges-admin/<slug:slug>', challenges_views.ChallengeAdmin.as_view()),
     path('entity-report/<slug:slug>', reports_views.EntityReport.as_view()),
-    path('challenges/<int:lower_limit>/<int:upper_limit>', challenges_views.GetChallenges.as_view()),
+    path('challenges', challenges_views.GetChallenges.as_view()),
     path('challenges-search/<str:target_name>', challenges_views.GetChallengesSearch.as_view()),
     path('users/<int:userID>', views.GetUser.as_view()),
     path('notifications/<int:notification_id>', views.Notifications.as_view()),

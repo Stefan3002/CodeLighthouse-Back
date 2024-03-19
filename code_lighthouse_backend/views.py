@@ -167,31 +167,46 @@ class GetAssignmentSubmissionsView(APIView):
             assignment = Assignment.objects.get(id=assignment_id)
 
             challenge = assignment.challenge
-            submissions = challenge.challenge_submissions.all().order_by('user')
-            users = assignment.users.all().order_by('username')
 
-            returned_submissions = {}
+            mode = request.GET.get('user')
 
-            decoded_user_id = get_request_user_id(request)
-            logged_in_user = AppUser.objects.get(id=decoded_user_id)
+            if mode:
+                low_idx = int(request.GET.get('start'))
+                high_idx = int(request.GET.get('end'))
 
-            if logged_in_user != assignment.lighthouse.author:
-                return Response({"data": 'You are not the owner of this lighthouse'}, status=status.HTTP_403_FORBIDDEN)
+                user = AppUser.objects.get(id=mode)
+                submissions = challenge.challenge_submissions.filter(user=user).order_by('-date', '-time')[low_idx : high_idx]
+                return Response(SubmissionSerializer(submissions, many=True).data, status=status.HTTP_200_OK)
+            elif not mode:
+                users = assignment.users.all().order_by('username')
+                print(users)
+                submissions = challenge.challenge_submissions.filter(user__in=users).order_by('-date', '-time', 'user')
 
 
-            for submission in submissions:
-                if submission.user in users:
+                returned_submissions = {}
+
+                decoded_user_id = get_request_user_id(request)
+                logged_in_user = AppUser.objects.get(id=decoded_user_id)
+
+                if logged_in_user != assignment.lighthouse.author:
+                    return Response({"data": 'You are not the owner of this lighthouse'}, status=status.HTTP_403_FORBIDDEN)
+
+
+                for submission in submissions:
                     username = submission.user.username
-                    data = (returned_submissions.get(username, []))
-                    data.append(SubmissionSerializer(submission).data)
+                    if returned_submissions.get(username, None) is None:
+                        data = []
+                        data.append(SubmissionSerializer(submission).data)
+                        data.append(submission.user.id)
                     try:
-                        grade = Grade.objects.get(Q(user=submission.user) & Q(assignment=assignment))
-                        data.append(grade.grade)
+                        if returned_submissions.get(username, None) is None:
+                            grade = Grade.objects.get(Q(user=submission.user) & Q(assignment=assignment))
+                            data.append(grade.grade)
                     except Grade.DoesNotExist:
                         data.append('')
 
                     returned_submissions[username] = data
-
+            # print(returned_submissions)
             return Response(returned_submissions, status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
