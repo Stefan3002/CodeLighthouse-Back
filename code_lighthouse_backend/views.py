@@ -437,8 +437,9 @@ class GetContests(APIView):
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
 
-            contests = Contest.objects.filter(Q(people__in=[logged_in_user]) | Q(author=logged_in_user))
+            contests = Contest.objects.filter(Q(people__in=[logged_in_user]) | Q(author=logged_in_user)).distinct()
             serialized_contest = ContestSerializer(contests, many=True)
+            print(contests)
             return Response(serialized_contest.data, status=status.HTTP_200_OK)
 
         except Exception as e:

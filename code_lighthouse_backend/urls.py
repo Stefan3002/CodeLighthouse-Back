@@ -4,6 +4,7 @@ from rest_framework_simplejwt import views as jwt_views
 
 from code_lighthouse_backend import views
 from code_lighthouse_backend.views_dir.auth_views import auth_views
+from code_lighthouse_backend.views_dir.enitities_views import entities_views
 from code_lighthouse_backend.views_dir.lighthouse_views import lighthouse_views
 from code_lighthouse_backend.views_dir.challenges_views import challenges_views
 from code_lighthouse_backend.views_dir.reports_views import reports_views
@@ -32,6 +33,8 @@ urlpatterns = [
     path('contests', views.GetContests.as_view()),
     path('contests/<int:id>', views.GetContest.as_view()),
     path('challenge-contest/<int:id>', views.ChallengeContest.as_view()),
+
+    path('user-entity', entities_views.GetUserEntity.as_view()),
 
     path('check-captcha', views.Captcha.as_view()),
 
