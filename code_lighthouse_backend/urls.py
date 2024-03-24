@@ -4,7 +4,7 @@ from rest_framework_simplejwt import views as jwt_views
 
 from code_lighthouse_backend import views
 from code_lighthouse_backend.views_dir.auth_views import auth_views
-from code_lighthouse_backend.views_dir.enitities_views import entities_views
+from code_lighthouse_backend.views_dir.enitities_views import entities_views, public_entities_views
 from code_lighthouse_backend.views_dir.lighthouse_views import lighthouse_views
 from code_lighthouse_backend.views_dir.challenges_views import challenges_views
 from code_lighthouse_backend.views_dir.reports_views import reports_views
@@ -24,7 +24,7 @@ urlpatterns = [
     path('random-challenge', views.RandomChallenge.as_view()),
     path('like/<slug:slug>', views.LikeView.as_view()),
 
-    path('public-entities', views.PublicEntities.as_view()),
+    path('public-entities', public_entities_views.PublicEntities.as_view()),
     path('reports', reports_views.GetReports.as_view()),
     path('announcements-delete/<int:announcement_id>', views.Announcements.as_view()),
     path('announcements', views.Announcements.as_view()),
@@ -37,6 +37,7 @@ urlpatterns = [
     path('user-entity', entities_views.GetUserEntity.as_view()),
 
     path('check-captcha', views.Captcha.as_view()),
+    path('check-captcha-log-in', views.CaptchaLogIn.as_view()),
 
     path('reports/<int:id>', reports_views.GetReports.as_view()),
 

@@ -327,23 +327,7 @@ class RandomChallenge(View):
         return HttpResponse(serialized_challenge, content_type='application/json')
 
 
-class PublicEntities(APIView):
-    def get(self, request):
-        try:
-            mode = request.GET.get('type')
-            if mode == 'lighthouse':
-                start_index = int(request.GET.get('start'))
-                end_index = int(request.GET.get('end'))
-                communities = Lighthouse.objects.filter(public=True)[start_index:end_index]
-                serialized_lighthouses = LighthouseSerializer(communities, many=True)
-                return Response(serialized_lighthouses.data, status=status.HTTP_200_OK)
-            if mode == 'contest':
-                communities = Contest.objects.filter(public=True)
-                serialized_contests = ContestSerializer(communities, many=True)
-                return Response(serialized_contests.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            print(e)
-            return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class LikeView(APIView):
@@ -1083,6 +1067,24 @@ class Captcha(APIView):
         try:
             decoded_user_id = get_request_user_id(request)
 
+            data = request.data
+            token = data['token']
+
+
+            score = requests.post('https://www.google.com/recaptcha/api/siteverify', {
+                'response': token,
+                'secret': os.environ['CAPTCHA_KEY']
+            })
+            print(score.json())
+            return Response({'OK': True, 'data': score.json()}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class CaptchaLogIn(APIView):
+    def post(self, request):
+        try:
             data = request.data
             token = data['token']
 

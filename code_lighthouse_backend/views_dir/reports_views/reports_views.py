@@ -53,12 +53,17 @@ class GetReports(APIView):
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
 
             mode = request.GET.get('type')
+            start_index = int(request.GET.get('start'))
+            end_index = int(request.GET.get('end'))
+
+            if not logged_in_user.admin_user:
+                return Response({'data': "You are no admin!"}, status=status.HTTP_403_FORBIDDEN)
 
             if mode == 'open':
-                reports = Reports.objects.filter(Q(closed=False))
+                reports = Reports.objects.filter(Q(closed=False))[start_index:end_index]
             else:
                 if mode == 'closed':
-                    reports = Reports.objects.filter(Q(closed=True))
+                    reports = Reports.objects.filter(Q(closed=True))[start_index:end_index]
 
             return Response(ReportSerializer(reports, many=True).data, status=status.HTTP_200_OK)
 
