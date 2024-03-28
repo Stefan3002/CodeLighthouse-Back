@@ -3,8 +3,10 @@ from django.urls import path
 from rest_framework_simplejwt import views as jwt_views
 
 from code_lighthouse_backend import views
+from code_lighthouse_backend.views_dir.announcements_views import announcements_views
 from code_lighthouse_backend.views_dir.auth_views import auth_views
 from code_lighthouse_backend.views_dir.enitities_views import entities_views, public_entities_views
+from code_lighthouse_backend.views_dir.files_views import files_views
 from code_lighthouse_backend.views_dir.lighthouse_views import lighthouse_views
 from code_lighthouse_backend.views_dir.challenges_views import challenges_views
 from code_lighthouse_backend.views_dir.reports_views import reports_views
@@ -26,8 +28,8 @@ urlpatterns = [
 
     path('public-entities', public_entities_views.PublicEntities.as_view()),
     path('reports', reports_views.GetReports.as_view()),
-    path('announcements-delete/<int:announcement_id>', views.Announcements.as_view()),
-    path('announcements', views.Announcements.as_view()),
+    path('announcements-delete/<int:announcement_id>', announcements_views.Announcements.as_view()),
+    path('announcements', announcements_views.Announcements.as_view()),
 
     path('create-contest', views.Contests.as_view()),
     path('contests', views.GetContests.as_view()),
@@ -69,7 +71,7 @@ urlpatterns = [
     path('purge-account',
          views.PurgeAccount.as_view()),
 
-    path('file/<str:file_name>/<int:lighthouse_id>', views.ViewFile.as_view()),
+    path('file/<str:file_name>/<int:lighthouse_id>', files_views.ViewFile.as_view()),
 
     path('entities/<int:lighthouseID>', lighthouse_views.GetEntity.as_view()),
     path('lighthouses/<int:lighthouseID>', lighthouse_views.GetEntity.as_view()),

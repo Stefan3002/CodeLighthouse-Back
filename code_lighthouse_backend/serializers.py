@@ -266,7 +266,8 @@ class AppUserSerializer(serializers.ModelSerializer):
 
         for log in logs:
             if log.type == 'auth':
-                most_time_logged_in = max(most_time_logged_in, (log.time_out - log.time_in).total_seconds())
+                if log.time_out is not None:
+                    most_time_logged_in = max(most_time_logged_in, (log.time_out - log.time_in).total_seconds())
 
         for log in logs:
             if log.type == 'challenge':
