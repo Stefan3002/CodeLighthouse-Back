@@ -30,7 +30,7 @@ if os.path.isfile(dotenv_file):
 
 # UPDATE secret key
 SECRET_KEY = os.environ['SECRET_KEY'] # Instead of your actual secret key
-
+DB_PASSWORD = os.environ['DB_PASSWORD']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -159,8 +159,16 @@ CHANNEL_LAYERS = {
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': BASE_DIR / 'db.sqlite3',
+
+        'ENGINE': 'django.db.backends.postgresql',
+       'NAME': 'codelighthouse_db',
+       'USER': 'postgres',
+       'PASSWORD': DB_PASSWORD,
+       'HOST': '127.0.0.1',
+       'PORT': '5433',
+
     }
 }
 
