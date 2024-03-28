@@ -2,6 +2,7 @@ import asyncio
 import smtplib, ssl, os
 
 import aiohttp
+from celery import shared_task
 from dotenv import load_dotenv
 
 port = 465  # For SSL
@@ -19,7 +20,7 @@ context = ssl.create_default_context()
 
 sender_email = 'secrieru2302@gmail.com'
 
-
+@shared_task
 async def send_email_async(receiver_email, message):
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
@@ -29,7 +30,8 @@ async def send_email_async(receiver_email, message):
         print(e)
 
 def send_email(receiver_email, message):
-    asyncio.run(send_email_async(receiver_email, message))
+    send_email_async.apply_async(args=[receiver_email, message], kwargs=[])
+
 
 
 # send_email(receiver_email, message)
