@@ -1,3 +1,5 @@
+import datetime
+
 from django.db.models import Q
 from rest_framework import serializers
 
@@ -258,7 +260,27 @@ class AppUserSerializer(serializers.ModelSerializer):
 
     def get_logs(self, app_user):
         logs = Log.objects.filter(author=app_user)
-        return LogsSerializer(logs, many=True).data
+
+        most_time_logged_in = 0
+        time_on_challenges = {}
+
+        for log in logs:
+            if log.type == 'auth':
+                most_time_logged_in = max(most_time_logged_in, (log.time_out - log.time_in).total_seconds())
+
+        for log in logs:
+            if log.type == 'challenge':
+                if log.challenge.id not in time_on_challenges:
+                    time_on_challenges[log.challenge.id] = 0
+                time_on_challenges[log.challenge.id] += ((log.time_out - log.time_in).total_seconds())
+
+        # print("Most Time Logged In:", most_time_logged_in)
+        # print("Time On Challenges:", time_on_challenges)
+
+        return {
+            "auth": most_time_logged_in,
+            "challenges": time_on_challenges
+        }
     def get_solved_challenges(self, app_user):
         challenges = app_user.solved_challenges.all()
         if self.context.get('drill'):

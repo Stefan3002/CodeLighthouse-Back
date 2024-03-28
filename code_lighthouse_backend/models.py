@@ -109,7 +109,7 @@ class Log(models.Model):
     challenge = models.ForeignKey(Challenge, related_name='logs_featured_in', on_delete=models.DO_NOTHING, null=True, default=None)
 
     def __str__(self):
-        return f'{self.time_in} by {self.author.username}'
+        return f'{self.time_in} by {self.author.username}, {self.type}'
 
 class Contest(models.Model):
     author = models.ForeignKey(AppUser, related_name='authored_contests', on_delete=models.DO_NOTHING)
