@@ -1,6 +1,6 @@
 from celery import shared_task
 from rest_framework.response import Response
-from code_lighthouse_backend.runUserCode import runPythonCode
+from code_lighthouse_backend.runUserCode import runPythonCode, runUserCode
 from rest_framework import status
 
 
@@ -21,15 +21,14 @@ def send_email_celery():
 
 
 @shared_task
-def runPythonCodeCelery(code, user_id, slug, mode, custom_hard_tests, soft_time_limit=6):
+def runUserCodeCelery(code, user_id, slug, mode, custom_hard_tests, soft_time_limit=6, language='Python'):
     try:
-        results = runPythonCode(code, user_id, slug, mode, custom_hard_tests, soft_time_limit)
+        results = runUserCode(code, user_id, slug, mode, custom_hard_tests, soft_time_limit, language)
         logs_str = results[0]
         exec_time = results[1]
         # Success!
         logs_str = format_logs_for_html(logs_str)
     except Exception as e:
         return handle_code_error(e)
-    print('aaaaa')
     return {'OK': True, 'data': {'logs': logs_str, 'time': exec_time}}
 

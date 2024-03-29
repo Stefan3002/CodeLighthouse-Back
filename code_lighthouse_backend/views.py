@@ -25,7 +25,7 @@ from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assig
 from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer, AppUserPublicSerializer, ContestSerializer, AssignmentSerializer
-from code_lighthouse_backend.tasks.tasks import send_email_celery, runPythonCodeCelery
+from code_lighthouse_backend.tasks.tasks import send_email_celery, runPythonCodeCelery, runUserCodeCelery
 from code_lighthouse_backend.utils import retrieve_token, retrieve_secret, get_request_user_id
 
 import firebase_admin
@@ -74,38 +74,15 @@ class TaskPoll(APIView):
 class RunUserCode(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-
     def post(self, request, slug):
-
-        # print(jwt.decode(token, 'django-insecure-op_4k4#z)fnvu%8jw01#o*n*3@@8)l*s7kiogd4i400f+qakw0', algorithms=["HS256"]))
-
         data = request.data
         language = data['language']
         soft_time_limit = data['timeLimit']
+        code = data['code']
+        user_id = data['userId']
 
-        if language == 'Python':
-            print('aaaaa')
-            code = data['code']
-            user_id = data['userId']
-            task = runPythonCodeCelery.apply_async(args=[code, user_id, slug, 'full', '',  soft_time_limit], kwargs=[])
-            task_id = task.id
-        # elif language == 'Javascript':
-        #     try:
-        #         logs_str = runJavascriptCode(request, slug, 'full', '')
-        #         logs_str = format_logs_for_html(logs_str)
-        #     except Exception as e:
-        #         return handle_code_error(e)
-        #
-        #     return Response({'data': logs_str}, status=status.HTTP_200_OK)
-        #
-        # elif language == 'Ruby':
-        #     try:
-        #         logs_str = runRubyCode(request, slug, 'full', '')
-        #         logs_str = format_logs_for_html(logs_str)
-        #     except Exception as e:
-        #         return handle_code_error(e)
-        #
-            # return Response({'data': logs_str}, status=status.HTTP_200_OK)
+        task = runUserCodeCelery.apply_async(args=[code, user_id, slug, 'full', '',  soft_time_limit, language], kwargs=[])
+        task_id = task.id
         return Response({'data': task_id}, status=status.HTTP_200_OK)
 
 
@@ -114,37 +91,15 @@ class RunUserHardCode(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, slug):
-        #         results = runPythonCode(request, slug, 'hard', custom_hard_tests)
-        # print(jwt.decode(token, 'django-insecure-op_4k4#z)fnvu%8jw01#o*n*3@@8)l*s7kiogd4i400f+qakw0', algorithms=["HS256"]))
-
         data = request.data
         language = data['language']
-        # soft_time_limit = data['timeLimit']
+        code = data['code']
+        user_id = data['userId']
+        custom_hard_tests = data['hardTests']
 
-        if language == 'Python':
-            print('aaaaa')
-            code = data['code']
-            user_id = data['userId']
-            custom_hard_tests = data['hardTests']
-            task = runPythonCodeCelery.apply_async(args=[code, user_id, slug, 'hard',  custom_hard_tests], kwargs=[])
-            task_id = task.id
-        # elif language == 'Javascript':
-        #     try:
-        #         logs_str = runJavascriptCode(request, slug, 'full', '')
-        #         logs_str = format_logs_for_html(logs_str)
-        #     except Exception as e:
-        #         return handle_code_error(e)
-        #
-        #     return Response({'data': logs_str}, status=status.HTTP_200_OK)
-        #
-        # elif language == 'Ruby':
-        #     try:
-        #         logs_str = runRubyCode(request, slug, 'full', '')
-        #         logs_str = format_logs_for_html(logs_str)
-        #     except Exception as e:
-        #         return handle_code_error(e)
-        #
-        # return Response({'data': logs_str}, status=status.HTTP_200_OK)
+        task = runUserCodeCelery.apply_async(args=[code, user_id, slug, 'hard',  custom_hard_tests, 6, language], kwargs=[])
+        task_id = task.id
+
         return Response({'data': task_id}, status=status.HTTP_200_OK)
 
 
