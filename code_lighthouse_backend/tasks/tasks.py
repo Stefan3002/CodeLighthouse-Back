@@ -1,6 +1,6 @@
 from celery import shared_task
 from rest_framework.response import Response
-from code_lighthouse_backend.runUserCode import runPythonCode, runUserCode
+from code_lighthouse_backend.runUserCode import runUserCode
 from rest_framework import status
 
 

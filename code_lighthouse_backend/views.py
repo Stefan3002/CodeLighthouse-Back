@@ -22,10 +22,9 @@ from code_lighthouse_backend.email_sending.messages import new_announcement_mess
 from code_lighthouse_backend.email_sending.send_emails import send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, \
     Announcement, Notification, Log, Contest, Reports, Submission, Grade
-from code_lighthouse_backend.runUserCode import runPythonCode, runJavascriptCode, runRubyCode
 from code_lighthouse_backend.serializers import AppUserSerializer, LighthouseSerializer, ChallengeSerializer, \
     SubmissionSerializer, AppUserPublicSerializer, ContestSerializer, AssignmentSerializer
-from code_lighthouse_backend.tasks.tasks import send_email_celery, runPythonCodeCelery, runUserCodeCelery
+from code_lighthouse_backend.tasks.tasks import send_email_celery, runUserCodeCelery
 from code_lighthouse_backend.utils import retrieve_token, retrieve_secret, get_request_user_id
 
 import firebase_admin
@@ -56,10 +55,10 @@ class Test(APIView):
 
 class TaskPoll(APIView):
     def get(self, request, task_id):
-        task = runPythonCodeCelery.AsyncResult(task_id)
+        task = runUserCodeCelery.AsyncResult(task_id)
         task_status = task.ready()
         if task_status:
-            print('aaa', task.get()['OK'])
+            # print('aaa', task.get()['OK'])
             if not task.get()['OK']:
                 return Response({'status': task_status, 'data': task.get()['data']}, status=status.HTTP_400_BAD_REQUEST)
             else:
@@ -78,6 +77,8 @@ class RunUserCode(APIView):
         data = request.data
         language = data['language']
         soft_time_limit = data['timeLimit']
+        if 'code' not in data:
+            return Response({"data": 'You forgot to actually type some code :) !'}, status=status.HTTP_400_BAD_REQUEST)
         code = data['code']
         user_id = data['userId']
 
@@ -93,6 +94,8 @@ class RunUserHardCode(APIView):
     def post(self, request, slug):
         data = request.data
         language = data['language']
+        if 'code' not in data:
+            return Response({"data": 'You forgot to actually type some code :) !'}, status=status.HTTP_400_BAD_REQUEST)
         code = data['code']
         user_id = data['userId']
         custom_hard_tests = data['hardTests']
