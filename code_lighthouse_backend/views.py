@@ -81,7 +81,7 @@ class RunUserCode(APIView):
             return Response({"data": 'You forgot to actually type some code :) !'}, status=status.HTTP_400_BAD_REQUEST)
         code = data['code']
         user_id = data['userId']
-
+        print(language)
         task = runUserCodeCelery.apply_async(args=[code, user_id, slug, 'full', '',  soft_time_limit, language], kwargs=[])
         task_id = task.id
         return Response({'data': task_id}, status=status.HTTP_200_OK)
@@ -254,10 +254,11 @@ class CommentsView(APIView):
 
             comment = Comment.objects.get(id=id)
 
-            if logged_in_user != comment.author:
+            if (logged_in_user != comment.author) and (not logged_in_user.admin_user):
                 return Response({"data": 'You are not the owner of this comment'}, status=status.HTTP_403_FORBIDDEN)
-            comment.delete()
-            return Response({"data": 'Successfully deleted!'}, status=status.HTTP_200_OK)
+            if (logged_in_user == comment.author) or logged_in_user.admin_user:
+                comment.delete()
+                return Response({"data": 'Successfully deleted!'}, status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
             return Response({"data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

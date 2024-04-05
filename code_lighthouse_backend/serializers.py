@@ -3,9 +3,9 @@ import datetime
 from django.db.models import Q
 from rest_framework import serializers
 
+import code_lighthouse_backend
 from code_lighthouse_backend.models import Lighthouse, AppUser, Challenge, Assignment, Comment, Like, Code, Submission, \
     Reports, Announcement, Notification, Log, Contest
-
 
 
 def serializeLogs(logs):
@@ -38,16 +38,22 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ['content', 'id', 'author', 'modified']
+        fields = ['content', 'id', 'author', 'modified', 'slug']
+
+    slug = serializers.SerializerMethodField()
 
     def get_author(self, comment):
         author = comment.author
         return AppUserSerializer(author).data
 
+    def get_slug(self, comment):
+        challenge_slug = comment.challenge.slug
+        return challenge_slug
+
 
 class ReportSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
-    assigned_admin = serializers.SerializerMethodField()
+    # assigned_admin = serializers.SerializerMethodField()
     challenge = serializers.SerializerMethodField()
 
     class Meta:
@@ -56,7 +62,7 @@ class ReportSerializer(serializers.ModelSerializer):
 
     def get_author(self, report):
         author = report.author
-        return AppUserSerializer(author).data
+        return AppUserPublicSerializer(author).data
 
     def get_assigned_admin(self, report):
         admin = report.author
@@ -64,7 +70,10 @@ class ReportSerializer(serializers.ModelSerializer):
 
     def get_challenge(self, report):
         challenge = report.challenge
-        return ChallengeSerializer(challenge).data
+        if isinstance(challenge, code_lighthouse_backend.models.Comment):
+            return CommentSerializer(challenge).data
+        else:
+            return ChallengeSerializer(challenge).data
 
 
 class AnnouncementSerializer(serializers.ModelSerializer):
@@ -79,7 +88,6 @@ class AnnouncementSerializer(serializers.ModelSerializer):
         author = announcement.author
         return AppUserSerializer(author).data
 
-
     def get_lighthouse(self, announcement):
         lighthouse = announcement.lighthouse
         if self.context.get('drill'):
@@ -93,10 +101,13 @@ class CodeSerializer(serializers.ModelSerializer):
         model = Code
         fields = '__all__'
 
+
 class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
         fields = '__all__'
+
+
 class SubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Submission
@@ -116,10 +127,12 @@ class SubmissionSerializer(serializers.ModelSerializer):
         user = submission.user
         return AppUserSerializer(user).data
 
+
 class LogsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Log
         fields = '__all__'
+
 
 class ChallengeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -136,6 +149,7 @@ class ChallengeSerializer(serializers.ModelSerializer):
     def get_user_logs(self, challenge):
         logs = Log.objects.filter(Q(challenge=challenge) & Q(author=self.context.get('requesting_user')))
         return serializeLogs(logs)
+
     def get_submissions(self, challenge):
         submissions = challenge.challenge_submissions.all()
         return SubmissionSerializer(submissions, many=True).data
@@ -190,6 +204,7 @@ class LighthousePreviewSerializer(serializers.ModelSerializer):
         author = lighthouse.author
         return AppUserSerializer(author).data
 
+
 class ContestPreviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contest
@@ -206,6 +221,7 @@ class LighthouseAssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lighthouse
         fields = ['id', 'name', 'author']
+
 
 class LighthouseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -241,10 +257,12 @@ class LikeSerializer(serializers.ModelSerializer):
         model = Like
         fields = '__all__'
 
+
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = '__all__'
+
 
 class ContestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -253,12 +271,15 @@ class ContestSerializer(serializers.ModelSerializer):
 
     challenges = serializers.SerializerMethodField()
     people = serializers.SerializerMethodField()
+
     def get_challenges(self, contest):
         challenges = contest.challenges.all()
         return ChallengeSerializer(challenges, many=True).data
+
     def get_people(self, contest):
         people = contest.people.all()
         return AppUserSerializer(people, many=True).data
+
 
 class AppUserPublicSerializer(serializers.ModelSerializer):
     class Meta:
@@ -273,6 +294,7 @@ class AppUserPublicSerializer(serializers.ModelSerializer):
             return ChallengeSerializer(challenges, many=True).data
         else:
             return {}
+
 
 class AppUserSerializer(serializers.ModelSerializer):
     enrolled_lighthouses = serializers.SerializerMethodField()
@@ -294,6 +316,7 @@ class AppUserSerializer(serializers.ModelSerializer):
             return ChallengeSerializer(challenges, many=True).data
         else:
             return {}
+
     def get_submissions(self, app_user):
         submissions = app_user.submissions.all()
         if self.context.get('drill'):

@@ -36,8 +36,8 @@ class GetReports(APIView):
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
 
-            if logged_in_user != admin:
-                return Response({'data': 'This report has not been assigned to you admin!'}, status=status.HTTP_403_FORBIDDEN)
+            # if logged_in_user != admin:
+            #     return Response({'data': 'This report has not been assigned to you admin!'}, status=status.HTTP_403_FORBIDDEN)
 
             report.closed = True
             report.save()

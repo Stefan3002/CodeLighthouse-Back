@@ -150,9 +150,8 @@ def create_files(code, true_solution, tests, custom_hard_tests, hard_tests, mode
         extension = '.py'
     elif language == 'Ruby':
         extension = '.rb'
-    elif extension == 'Javascript':
+    elif language == 'Javascript':
         extension = '.js'
-
 
     if case == 'Camel':
         user_file = 'userFile'
@@ -189,7 +188,6 @@ def runUserCode(code, user_id, slug, mode, custom_hard_tests, soft_time_limit=6,
     true_solution = challenge_code.solution
     tests = challenge_code.random_tests
     hard_tests = challenge_code.hard_tests
-
     if language == 'Javascript':
         # Add the export of the userFunction
         code += '\n module.exports = userFunction'
@@ -198,7 +196,6 @@ def runUserCode(code, user_id, slug, mode, custom_hard_tests, soft_time_limit=6,
         case = verify_functions(true_solution, code, tests, language)
         file_id = uuid.uuid4()
         user_file, author_file, random_file, hard_file, extension = create_files(code, true_solution, tests, custom_hard_tests, hard_tests, mode, file_id, case, language)
-
         client = docker.from_env()
 
         if language == 'Python':
@@ -216,6 +213,7 @@ def runUserCode(code, user_id, slug, mode, custom_hard_tests, soft_time_limit=6,
             container = client.containers.create(**docker_config_hard_file)
         else:
             container = client.containers.create(**docker_config_file)
+
 
         os.system(f'docker cp {user_file}-{file_id}{extension} {container.name}:/app/vol/{user_file}{extension}')
         os.system(f'docker cp {author_file}-{file_id}{extension} {container.name}:/app/vol/{author_file}{extension}')
@@ -252,13 +250,13 @@ def runUserCode(code, user_id, slug, mode, custom_hard_tests, soft_time_limit=6,
 
         checkExitCode(exit_code, user_id, challenge, code, language, mode, exec_time)
         # Sure to not have failed
-
+        removeFilesFromSystem(container, language, file_id, user_file, author_file, random_file, hard_file, case, extension)
         return logs_str, exec_time
     except Exception as e:
+        removeFilesFromSystem(container, language, file_id, user_file, author_file, random_file, hard_file, case, extension)
         raise Exception(f'{e} {logs_str}')
         # return Response({'OK': False, 'data': e}, status=status.HTTP_200_OK)
-    finally:
-        removeFilesFromSystem(container, language, file_id, user_file, author_file, random_file, hard_file, case, extension)
+
 
     # return Response({'OK': True, 'data': logs_str}, status=status.HTTP_200_OK)
 

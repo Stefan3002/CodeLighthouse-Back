@@ -60,7 +60,7 @@ class GetChallenge(APIView):
 
             # Check for unicity in title, to have unique slugs
             existing_challenges = Challenge.objects.filter(slug=slugify(title))
-            if len(existing_challenges):
+            if len(existing_challenges) > 1:
                 return Response({"data": 'Challenge with this name already exists'}, status=status.HTTP_400_BAD_REQUEST)
             language = data['language']
             description = data['description']

@@ -1,7 +1,8 @@
 import datetime
 import uuid
 from time import timezone
-
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 from django.db import models
 from django.template.defaultfilters import slugify
@@ -133,7 +134,12 @@ class Reports(models.Model):
     author = models.ForeignKey(AppUser, related_name='assigned_reports', on_delete=models.DO_NOTHING)
     assigned_admin = models.ForeignKey(AppUser, related_name='reports_admined', on_delete=models.DO_NOTHING)
     closed = models.BooleanField(default=False)
-    challenge = models.ForeignKey(Challenge, related_name='reports_featured_in', on_delete=models.DO_NOTHING, null=True)
+
+    # Generic foreign key to refer to any model (Challenge or Comment)
+    content_type = models.ForeignKey(ContentType, on_delete=models.DO_NOTHING, null=True)
+    object_id = models.PositiveIntegerField(default=0)
+    challenge = GenericForeignKey('content_type', 'object_id')
+    # challenge = models.ForeignKey(Challenge, related_name='reports_featured_in', on_delete=models.DO_NOTHING, null=True)
 
     def __str__(self):
         return f'{self.reason} by {self.author} on {self.challenge} assigned to {self.assigned_admin}'
