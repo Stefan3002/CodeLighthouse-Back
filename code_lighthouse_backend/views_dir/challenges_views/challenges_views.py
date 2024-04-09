@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from code_lighthouse_backend.email_sending.messages import format_new_admin_email, new_admin_message
+from code_lighthouse_backend.email_sending.messages import format_new_admin_email, new_admin_message, \
+    new_announcement_message
 from code_lighthouse_backend.email_sending.send_emails import send_email_async, send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Code, Reports, Like
 from code_lighthouse_backend.serializers import ChallengeSerializer
@@ -271,7 +272,6 @@ class ChallengeAdmin(APIView):
             data = request.data
             verdict = data['verdict']
 
-
             challenge = Challenge.objects.get(slug=slug)
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
@@ -293,7 +293,8 @@ class ChallengeAdmin(APIView):
                 challenge.public = False
                 challenge.status = 'Needs improvement'
 
-                format_new_admin_email(challenge.author.username, challenge.title, details)
+                format_new_admin_email(challenge.author.username, challenge.title, details, logged_in_user.email)
+                print(new_admin_message.as_string())
                 send_email(receiver_email=challenge.author.email, message=new_admin_message)
             elif verdict == 'deny':
                 challenge.public = False
