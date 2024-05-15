@@ -53,7 +53,7 @@ class Announcements(APIView):
                 'type': 'new_announcement',
                 'lighthouseId': lighthouse_id,
                 'message': content,
-                'url': f'/es/{lighthouse_id}'
+                'url': f'/app/lighthouses/{lighthouse_id}'
             })
 
             # Send E-mails.

@@ -7,13 +7,12 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from code_lighthouse_backend.models import AppUser
 from code_lighthouse_backend.serializers import AppUserSerializer
-
+from code_lighthouse_backend.validations.login_validations import login_validator
 
 class AuthProvider(APIView):
     def post(self, request):
 
         try:
-            # default_app = firebase_admin.initialize_app()
             id_token = request.data['idToken']
             email = request.data['email']
 
@@ -49,10 +48,27 @@ class Auth(APIView):
         try:
             email = request.data['email']
             password = request.data['password']
+
+            if login_validator["inputNull"] is False and (not email or len(email) == 0 or not password or len(password) == 0):
+                return Response({'OK': False, 'data': 'E-mail or password is empty!'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            if len(email) < login_validator["emailMin"]:
+                return Response({'OK': False, 'data': 'E-mail is too short!'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            if len(password) < login_validator["passwordMin"]:
+                return Response({'OK': False, 'data': 'Password is too short!'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
             try:
                 user = AppUser.objects.get(email=email)
             except AppUser.DoesNotExist:
-                user = AppUser.objects.get(username=email)
+                try:
+                    user = AppUser.objects.get(username=email)
+                except AppUser.DoesNotExist as e:
+                    return Response({'data': 'User does not exist!'}, status=status.HTTP_404_NOT_FOUND)
+
             # print(password, user.password)
             if user.password.strip() != '' and user.password == hashlib.sha256(password.encode('UTF-8')).hexdigest():
 
