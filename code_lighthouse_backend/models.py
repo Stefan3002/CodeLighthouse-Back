@@ -1,7 +1,7 @@
 import datetime
 import uuid
 from time import timezone
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 from django.db import models
@@ -51,6 +51,21 @@ class Notification(models.Model):
 
     def __str__(self):
         return f'{self.user}'
+class Reports(models.Model):
+    reason = models.CharField(max_length=30)
+    comment = models.TextField(max_length=1000, null=True)
+    author = models.ForeignKey(AppUser, related_name='assigned_reports', on_delete=models.DO_NOTHING)
+    assigned_admin = models.ForeignKey(AppUser, related_name='reports_admined', on_delete=models.DO_NOTHING)
+    closed = models.BooleanField(default=False)
+
+    # Generic foreign key to refer to any model (Challenge or Comment)
+    content_type = models.ForeignKey(ContentType, on_delete=models.DO_NOTHING, null=True)
+    object_id = models.PositiveIntegerField(default=0)
+    challenge = GenericForeignKey('content_type', 'object_id')
+    # challenge = models.ForeignKey(Challenge, related_name='reports_featured_in', on_delete=models.DO_NOTHING, null=True)
+
+    def __str__(self):
+        return f'{self.reason} by {self.author} on {self.challenge} assigned to {self.assigned_admin}'
 
 class Challenge(models.Model):
     title = models.CharField(max_length=50)
@@ -66,6 +81,8 @@ class Challenge(models.Model):
     attempts = models.IntegerField(max_length=100, default=0)
     solved = models.IntegerField(max_length=100, default=0)
     time_limit = models.FloatField(default=6)
+
+    reports = GenericRelation(Reports)
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)
@@ -102,7 +119,7 @@ class Lighthouse(models.Model):
         return f'{self.name} by {self.author.username}'
 
 class Log(models.Model):
-    author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING, related_name='user_logs', null=True,
+    author = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='user_logs', null=True,
                                blank=True)
     time_in = models.DateTimeField(null=True)
     time_out = models.DateTimeField(null=True)
@@ -128,21 +145,6 @@ class Contest(models.Model):
     def __str__(self):
         return f'{self.name}'
 
-class Reports(models.Model):
-    reason = models.CharField(max_length=30)
-    comment = models.TextField(max_length=1000, null=True)
-    author = models.ForeignKey(AppUser, related_name='assigned_reports', on_delete=models.DO_NOTHING)
-    assigned_admin = models.ForeignKey(AppUser, related_name='reports_admined', on_delete=models.DO_NOTHING)
-    closed = models.BooleanField(default=False)
-
-    # Generic foreign key to refer to any model (Challenge or Comment)
-    content_type = models.ForeignKey(ContentType, on_delete=models.DO_NOTHING, null=True)
-    object_id = models.PositiveIntegerField(default=0)
-    challenge = GenericForeignKey('content_type', 'object_id')
-    # challenge = models.ForeignKey(Challenge, related_name='reports_featured_in', on_delete=models.DO_NOTHING, null=True)
-
-    def __str__(self):
-        return f'{self.reason} by {self.author} on {self.challenge} assigned to {self.assigned_admin}'
 
 class Announcement(models.Model):
     author = models.ForeignKey(AppUser, on_delete=models.DO_NOTHING)

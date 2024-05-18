@@ -24,6 +24,10 @@ class GetLighthousePreview(APIView):
             data = request.data
             enrollment_code = data['enrollmentCode']
 
+            if lighthouse_code_validator["inputNull"] is False and (not enrollment_code or len(enrollment_code) == 0):
+                return Response({'OK': False, 'data': 'Enrollment code is missing!'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
             if mode == 'lighthouse':
                 lighthouse = Lighthouse.objects.get(enrollment_code=enrollment_code)
                 serialized_lighthouse = LighthousePreviewSerializer(lighthouse, context={'drill': False})

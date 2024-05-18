@@ -1,5 +1,6 @@
 import sys
 import traceback
+from django.contrib.contenttypes.models import ContentType
 
 import firebase_admin
 import jwt
@@ -108,8 +109,12 @@ class EntityReport(APIView):
 
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
+            print(Reports.objects.all()[0].challenge)
 
-            if Reports.objects.filter(Q(author=logged_in_user) & Q(reason=reason)):
+            # Get the ContentType for the Challenge model
+            entity_content_type = ContentType.objects.get_for_model(type(entity))
+
+            if Reports.objects.filter(Q(author=logged_in_user) & Q(object_id=entity.id) & Q(content_type=entity_content_type) & Q(reason=reason)):
                 return Response({'data': 'You can only report this challenge for this reason once.'},
                                 status=status.HTTP_403_FORBIDDEN)
 

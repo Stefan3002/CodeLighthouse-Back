@@ -18,7 +18,7 @@ import os
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from code_lighthouse_backend.email_sending.messages import new_announcement_message, format_new_announcement_email, \
-    format_new_account_email, new_account_message, format_new_grade_email, new_grade_message
+    format_new_account_email, new_account_message, format_new_grade_email, new_grade_message,  format_new_contest_email, new_contest_message
 from code_lighthouse_backend.email_sending.send_emails import send_email
 from code_lighthouse_backend.models import Challenge, AppUser, Lighthouse, Assignment, Like, Comment, Code, \
     Announcement, Notification, Log, Contest, Reports, Submission, Grade
@@ -343,6 +343,7 @@ class Contests(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
         try:
+
             data = request.data
             # lighthouse_id = data['lighthouseId']
             # content = data['content']
@@ -407,9 +408,14 @@ class Contests(APIView):
                     new_contest.people.add(new_user)
                     new_contest.save()
                     # Email time!!!
-                    content = f"The contest is as follows: {name} <br/> {description}."
-                    format_new_account_email(username, password.hex, content)
-                    send_email(receiver_email=email, message=new_account_message)
+                    if not new_user.provider:
+                        content = f"The contest is as follows: {name} <br/> {description}."
+                        format_new_account_email(username, password.hex, content)
+                        send_email(receiver_email=email, message=new_account_message)
+                    else:
+                        content = f"The contest is as follows: {name} <br/> {description}."
+                        format_new_contest_email(username, content)
+                        send_email(receiver_email=email, message=new_contest_message)
 
 
 
@@ -442,6 +448,9 @@ class ContestResetPassword(APIView):
 
             user = AppUser.objects.get(id=userID)
 
+            if user.provider:
+                return Response({'OK': False, 'data': 'You cannot reset the password of a provider-created account!'}, status=status.HTTP_400_BAD_REQUEST)
+
             if logged_in_user == contest.author:
                 new_password = uuid.uuid4()
                 user.password = hashlib.sha256(new_password.hex.encode('UTF-8')).hexdigest()
@@ -472,6 +481,10 @@ class ContestResetEmail(APIView):
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
 
             user = AppUser.objects.get(id=userID)
+
+            if user.provider:
+                return Response({'OK': False, 'data': 'You cannot change the e-mail of a provider-created account!'}, status=status.HTTP_400_BAD_REQUEST)
+
 
             if user_new_email == user.email:
                 return Response({'OK': False, 'data': 'The new e-mail is the same as the old one!'},
@@ -542,6 +555,7 @@ class ContestSummary(APIView):
                         summary[submission.challenge.slug] = 9999999
 
                     summary[submission.challenge.slug] = min(summary.get(submission.challenge.slug), round(submission.exec_time, 5))
+                print(summary)
                 return Response(summary, status=status.HTTP_200_OK)
             else:
                 return Response({'OK': False, 'data': 'You are not the owner of the Contest!'}, status=status.HTTP_403_FORBIDDEN)

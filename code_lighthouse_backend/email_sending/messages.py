@@ -95,6 +95,42 @@ def format_new_account_email(username, password, announcement_content):
     new_account_message.attach(part)
 
 
+new_contest_message = MIMEMultipart("alternative")
+new_contest_message["Subject"] = "You have been registered for a contest - CodeLighthouse"
+
+
+def format_new_contest_email(username, announcement_content):
+    html = f"""\
+    <html>
+      <body>
+        <p>
+        Hi, <b>{username}</b> <br />
+        You have been <b>registered</b> for a contest! <br />
+        </p>
+        <p>
+        You are already registered into CodeLighthouse, so there was no new account generated for you.
+        </p>
+        <p>
+        {announcement_content}
+        </p>
+      </body>
+    </html>
+    """
+
+    # Turn these into plain/html MIMEText objects
+    part = MIMEText(html, "html")
+
+    # Add HTML/plain-text parts to MIMEMultipart message
+    # The email client will try to render the last part first
+    new_contest_message.attach(part)
+
+
+
+
+
+
+
+
 new_admin_message = MIMEMultipart("alternative")
 new_admin_message["Subject"] = "Status update on your Challenge - CodeLighthouse"
 
