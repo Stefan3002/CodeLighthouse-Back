@@ -88,7 +88,13 @@ class EntityReport(APIView):
         try:
             data = request.data
             reason = data['reason']
-            comment = data['comments']
+
+            mode = request.GET.get('type')
+
+            if mode != 'challenge-difficulty':
+                comment = data['comments']
+            else:
+                comment = ''
 
             if reason == 'challenge-description':
                 read_code_of_conduct = data['readCodeofConduct']
@@ -101,15 +107,14 @@ class EntityReport(APIView):
                 if len(comment.strip()) > 1000:
                     return Response({'data': 'Please shorten your reason for reporting.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            mode = request.GET.get('type')
-            if mode == 'challenge-description':
+
+            if mode == 'challenge-description' or mode == 'challenge-difficulty':
                 entity = Challenge.objects.get(slug=slug)
             elif mode == 'comment':
                 entity = Comment.objects.get(id=slug)
 
             decoded_user_id = get_request_user_id(request)
             logged_in_user = AppUser.objects.get(id=decoded_user_id)
-            print(Reports.objects.all()[0].challenge)
 
             # Get the ContentType for the Challenge model
             entity_content_type = ContentType.objects.get_for_model(type(entity))
